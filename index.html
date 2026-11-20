@@ -1,0 +1,1154 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>欧洲国家图 v3.3（合并Path优化·无河流）</title>
+<style>
+  html, body {
+    margin:0; padding:0; height:100%; overflow:hidden; background:#0f1822;
+    -webkit-user-select:none; user-select:none; -webkit-tap-highlight-color:transparent;
+  }
+  #map { height:100%; width:100%; touch-action:none; display:block; }
+  #loading {
+    position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+    color:#a8b8c8; font-family:monospace; font-size:13px; z-index:9999;
+    text-align:center; line-height:1.7; max-width:80vw; word-break:break-all;
+  }
+  #hud {
+    position:fixed; bottom:22px; left:24px; z-index:9999;
+    color:#c9b89a; font-family:monospace; font-size:11px;
+    background:rgba(15,24,34,0.8); padding:6px 12px; border-radius:3px;
+    border:1px solid rgba(190,170,120,0.35); max-width:80vw;
+  }
+  #hud b { color:#e8d9a0; }
+</style>
+</head>
+<body>
+<canvas id="map"></canvas>
+<div id="loading">正在加载国家数据...</div>
+<div id="hud" style="display:none"></div>
+
+<script>
+window.addEventListener('error', function(e) {
+  var el = document.getElementById('loading');
+  el.style.display = 'block'; el.style.zIndex = '99999';
+  el.innerHTML = '⚠️ 脚本错误: ' + (e.message || '未知') + '<br>(行 ' + (e.lineno || '?') + ')';
+});
+
+// ===== 参数 =====
+var BBOX = [-26, 27, 62, 72];
+var MAX_ZOOM = 8;
+var RDP_FINE   = 0.012;
+var RDP_COARSE = 0.05;
+var VERTEX_Q = 0.01;
+var ADJ_MIN_SHARED = 3;
+var FETCH_TIMEOUT = 15000;
+var LOD_SWITCH = 1.8;
+var TAP_FALLBACK_PX = 26;
+
+var SEA   = '#0f1822';
+var BEACH = '#dccfae';
+var COAST = '#8a7351';
+var GOLD  = 'rgba(190,170,120,';
+var VOID  = 'rgba(4,10,18,0.45)';
+var LAKE_FILL = '#9db9d0';
+var BORDER = '#3a2f1d';
+var LABEL_FONT = '"Palatino Linotype","Book Antiqua","Songti SC","STSong","Noto Serif CJK SC",Georgia,serif';
+
+var TINTS = ['#c9b89a','#c3b191','#cfbfa0','#c6b48e','#c1ad8c',
+             '#ccc0a5','#bfb190','#c8bb9c','#c4b694','#d0c2a3'];
+var TINT_MAP = {
+  'Germany':'#bfb9a8','France':'#cdc09b','Italy':'#c6b190','United Kingdom':'#c2b596',
+  'Spain':'#cbbd9d','Poland':'#c3b28e','Russia':'#c8c0ab','Turkey':'#c2ab8b',
+  'Sweden':'#c5bb9f','Norway':'#bfbb9f','Finland':'#c2bda0','Ukraine':'#c8b894'
+};
+function countryColor(admin) {
+  if (TINT_MAP[admin]) return TINT_MAP[admin];
+  var h = 0;
+  for (var i = 0; i < admin.length; i++) h = (h * 31 + admin.charCodeAt(i)) >>> 0;
+  return TINTS[h % TINTS.length];
+}
+
+var COUNTRY_CN = {
+  'France':'法国','Germany':'德国','Italy':'意大利','Spain':'西班牙','Portugal':'葡萄牙',
+  'United Kingdom':'英国','Ireland':'爱尔兰','Iceland':'冰岛','Norway':'挪威',
+  'Sweden':'瑞典','Finland':'芬兰','Denmark':'丹麦','Netherlands':'荷兰','Belgium':'比利时',
+  'Luxembourg':'卢森堡','Switzerland':'瑞士','Austria':'奥地利','Poland':'波兰',
+  'Czechia':'捷克','Czech Republic':'捷克','Slovakia':'斯洛伐克','Hungary':'匈牙利',
+  'Romania':'罗马尼亚','Bulgaria':'保加利亚','Greece':'希腊','Albania':'阿尔巴尼亚',
+  'North Macedonia':'北马其顿','Macedonia':'马其顿','Serbia':'塞尔维亚','Croatia':'克罗地亚',
+  'Bosnia and Herz.':'波黑','Bosnia and Herzegovina':'波黑','Montenegro':'黑山',
+  'Kosovo':'科索沃','Slovenia':'斯洛文尼亚','Ukraine':'乌克兰','Belarus':'白俄罗斯',
+  'Moldova':'摩尔多瓦','Lithuania':'立陶宛','Latvia':'拉脱维亚','Estonia':'爱沙尼亚',
+  'Russia':'俄罗斯','Turkey':'土耳其','Georgia':'格鲁吉亚','Armenia':'亚美尼亚',
+  'Azerbaijan':'阿塞拜疆','Morocco':'摩洛哥','Algeria':'阿尔及利亚','Tunisia':'突尼斯',
+  'Libya':'利比亚','Egypt':'埃及','Syria':'叙利亚','Lebanon':'黎巴嫩','Israel':'以色列',
+  'Jordan':'约旦','Iraq':'伊拉克','Iran':'伊朗','Cyprus':'塞浦路斯','Malta':'马耳他',
+  'Kazakhstan':'哈萨克斯坦','Turkmenistan':'土库曼斯坦','Uzbekistan':'乌兹别克斯坦'
+};
+var CITY_CN = {
+  'London':'伦敦','Paris':'巴黎','Berlin':'柏林','Madrid':'马德里','Rome':'罗马',
+  'Vienna':'维也纳','Warsaw':'华沙','Moscow':'莫斯科','Stockholm':'斯德哥尔摩',
+  'Oslo':'奥斯陆','Copenhagen':'哥本哈根','Ankara':'安卡拉','Kiev':'基辅','Kyiv':'基辅',
+  'Reykjavík':'雷克雅未克','Reykjavik':'雷克雅未克','Amsterdam':'阿姆斯特丹',
+  'Brussels':'布鲁塞尔','Bern':'伯尔尼','Lisbon':'里斯本','Lisboa':'里斯本',
+  'Dublin':'都柏林','Edinburgh':'爱丁堡','Munich':'慕尼黑','Hamburg':'汉堡',
+  'Barcelona':'巴塞罗那','Milan':'米兰','Milano':'米兰','Naples':'那不勒斯','Napoli':'那不勒斯',
+  'Athens':'雅典','Bucharest':'布加勒斯特','Budapest':'布达佩斯','Prague':'布拉格',
+  'Praha':'布拉格','Belgrade':'贝尔格莱德','Zagreb':'萨格勒布','Sofia':'索非亚',
+  'Minsk':'明斯克','Helsinki':'赫尔辛基','Istanbul':'伊斯坦布尔',
+  'Saint Petersburg':'圣彼得堡','Sankt Peterburg':'圣彼得堡','Volgograd':'伏尔加格勒',
+  'Rostov':'顿河畔罗斯托夫','Kharkiv':'哈尔科夫','Frankfurt':'法兰克福',
+  'Cologne':'科隆','Köln':'科隆','Stuttgart':'斯图加特','Leipzig':'莱比锡',
+  'Rotterdam':'鹿特丹','The Hague':'海牙','Antwerp':'安特卫普','Zurich':'苏黎世',
+  'Geneva':'日内瓦','Venice':'威尼斯','Venezia':'威尼斯','Florence':'佛罗伦萨',
+  'Turin':'都灵','Torino':'都灵','Valencia':'瓦伦西亚','Seville':'塞维利亚',
+  'Sevilla':'塞维利亚','Glasgow':'格拉斯哥','Manchester':'曼彻斯特',
+  'Lyon':'里昂','Marseille':'马赛','Toulouse':'图卢兹','Bordeaux':'波尔多',
+  'Nantes':'南特','Nice':'尼斯','Strasbourg':'斯特拉斯堡','Porto':'波尔图',
+  'Bergen':'卑尔根','Trondheim':'特隆赫姆','Göteborg':'哥德堡','Malmö':'马尔默',
+  'Gdańsk':'格但斯克','Kraków':'克拉科夫','Krakow':'克拉科夫','Vilnius':'维尔纽斯',
+  'Riga':'里加','Tallinn':'塔林','Thessaloniki':'塞萨洛尼基','Kaliningrad':'加里宁格勒',
+  'Kazan':'喀山','Samara':'萨马拉','Perm':'彼尔姆','Baku':'巴库','Tbilisi':'第比利斯',
+  'Yerevan':'埃里温','Odessa':'敖德萨','Odesa':'敖德萨',
+  'Casablanca':'卡萨布兰卡','Rabat':'拉巴特','Marrakesh':'马拉喀什','Marrakech':'马拉喀什',
+  'Fez':'非斯','Fès':'非斯','Oujda':'乌季达','Safi':'萨菲','Tangier':'丹吉尔','Tanger':'丹吉尔',
+  'Oran':'奥兰','Algiers':'阿尔及尔','Alger':'阿尔及尔','Constantine':'君士坦丁',
+  'Tunis':'突尼斯','Tripoli':'的黎波里','Cairo':'开罗','Alexandria':'亚历山大'
+};
+function cnName(n, d) { return d[n] || n; }
+
+var SEA_LABELS = [
+  { t:'大西洋',     lng:-14.5, lat:46.5, size:19, r:140 },
+  { t:'北海',       lng:3.2,   lat:57.2, size:13, r:55 },
+  { t:'挪威海',     lng:1.5,   lat:66.0, size:14, r:70 },
+  { t:'波罗的海',   lng:19.6,  lat:58.6, size:12, r:45 },
+  { t:'地中海',     lng:6,     lat:39.0, size:17, r:110 },
+  { t:'黑海',       lng:34.5,  lat:43.3, size:13, r:55 },
+  { t:'里海',       lng:50.5,  lat:41.5, size:12, r:40 },
+  { t:'比斯开湾',   lng:-4.5,  lat:45.9, size:11, r:35 },
+  { t:'亚得里亚海', lng:16.1,  lat:43.3, size:9,  r:28 },
+  { t:'爱琴海',     lng:25.3,  lat:38.6, size:9,  r:22 }
+];
+
+// ===== 全局状态 =====
+var TAP_MOVE_LIMIT = 10, TAP_TIME_LIMIT = 300, ZOOM_STEP_MAX = 1.06;
+var canvas = document.getElementById('map');
+var ctx = canvas.getContext('2d');
+var DPR = Math.min(window.devicePixelRatio || 1, 2);
+var W = 0, H = 0;
+
+var world = { x0:0, x1:0, y0:0, y1:0, w:1, h:1 };
+var view = { cx: 0.5, cy: 0.5, s: 1000 };
+var sMin = 100, sMax = 5000;
+
+var countries = [];
+var adjacency = [];
+var lakePath = null;
+var lakeRings = [];
+var cityPoints = [];
+var selected = -1;
+var vignette = null;
+var ready = false;
+
+var HAS_PATH2D = (typeof Path2D !== 'undefined');
+var HAS_ADDPATH = HAS_PATH2D && typeof Path2D.prototype.addPath !== 'undefined';
+
+// ===== 合并Path =====
+var mergedFill = [];
+var mergedOutline = null;
+var mergeReady = false;
+
+var vertexMap = new Map();
+
+// ===== FPS 计数 =====
+var fpsFrames = 0, fpsLast = Date.now(), fpsVal = 0;
+
+// ===== 投影 =====
+function projX(lng) { return (lng + 180) / 360; }
+function projY(lat) {
+  var s = Math.sin(lat * Math.PI / 180);
+  return 0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI);
+}
+function unprojX(x) { return x * 360 - 180; }
+function unprojY(y) {
+  var n = Math.PI * (1 - 2 * y);
+  return Math.atan(Math.sinh(n)) * 180 / Math.PI;
+}
+function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
+
+// ===== RDP =====
+function ptSegDist2(p, a, b) {
+  var dx = b[0]-a[0], dy = b[1]-a[1];
+  var len2 = dx*dx + dy*dy;
+  var t = len2 > 0 ? ((p[0]-a[0])*dx + (p[1]-a[1])*dy) / len2 : 0;
+  t = clamp(t, 0, 1);
+  var ex = p[0] - (a[0]+t*dx), ey = p[1] - (a[1]+t*dy);
+  return ex*ex + ey*ey;
+}
+function rdp(points, eps) {
+  var n = points.length;
+  if (n < 3) return points;
+  var keep = new Array(n);
+  for (var z = 0; z < n; z++) keep[z] = false;
+  keep[0] = true; keep[n-1] = true;
+  var stack = [[0, n-1]];
+  var eps2 = eps * eps;
+  while (stack.length) {
+    var seg = stack.pop();
+    var a = seg[0], b = seg[1];
+    if (b - a < 2) continue;
+    var maxD = -1, maxI = -1;
+    for (var i = a+1; i < b; i++) {
+      var d = ptSegDist2(points[i], points[a], points[b]);
+      if (d > maxD) { maxD = d; maxI = i; }
+    }
+    if (maxD > eps2) {
+      keep[maxI] = true;
+      stack.push([a, maxI], [maxI, b]);
+    }
+  }
+  var out = [];
+  for (var j = 0; j < n; j++) if (keep[j]) out.push(points[j]);
+  return out.length >= 3 ? out : points;
+}
+
+// ===== 裁剪 =====
+function clipRing(ring) {
+  var pts = ring.slice();
+  if (pts.length > 1) {
+    var a = pts[0], b = pts[pts.length - 1];
+    if (a[0] === b[0] && a[1] === b[1]) pts.pop();
+  }
+  if (pts.length < 3) return [];
+  var edges = [
+    { inside: function(p){ return p[0] >= BBOX[0]; },
+      cross: function(p, q){ var t=(BBOX[0]-p[0])/(q[0]-p[0]); return [BBOX[0], p[1]+(q[1]-p[1])*t]; } },
+    { inside: function(p){ return p[0] <= BBOX[2]; },
+      cross: function(p, q){ var t=(BBOX[2]-p[0])/(q[0]-p[0]); return [BBOX[2], p[1]+(q[1]-p[1])*t]; } },
+    { inside: function(p){ return p[1] >= BBOX[1]; },
+      cross: function(p, q){ var t=(BBOX[1]-p[1])/(q[1]-p[1]); return [p[0]+(q[0]-p[0])*t, BBOX[1]]; } },
+    { inside: function(p){ return p[1] <= BBOX[3]; },
+      cross: function(p, q){ var t=(BBOX[3]-p[1])/(q[1]-p[1]); return [p[0]+(q[0]-p[0])*t, BBOX[3]]; } }
+  ];
+  var out = pts;
+  for (var e = 0; e < edges.length && out.length > 0; e++) out = clipHalf(out, edges[e]);
+  return out;
+}
+function clipHalf(points, edge) {
+  if (points.length === 0) return [];
+  var out = [], n = points.length;
+  for (var i = 0; i < n; i++) {
+    var cur = points[i], prev = points[(i - 1 + n) % n];
+    var curIn = edge.inside(cur), prevIn = edge.inside(prev);
+    if (curIn) { if (!prevIn) out.push(edge.cross(prev, cur)); out.push(cur); }
+    else if (prevIn) out.push(edge.cross(prev, cur));
+  }
+  return out;
+}
+function projRing(ring) {
+  var pr = new Array(ring.length);
+  for (var k = 0; k < ring.length; k++) pr[k] = [projX(ring[k][0]), projY(ring[k][1])];
+  return pr;
+}
+function polyOutsideBBox(poly) {
+  var x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  var ring = poly[0];
+  for (var i = 0; i < ring.length; i++) {
+    if (ring[i][0] < x0) x0 = ring[i][0];
+    if (ring[i][0] > x1) x1 = ring[i][0];
+    if (ring[i][1] < y0) y0 = ring[i][1];
+    if (ring[i][1] > y1) y1 = ring[i][1];
+  }
+  return x1 < BBOX[0] || x0 > BBOX[2] || y1 < BBOX[1] || y0 > BBOX[3];
+}
+
+// ===== 地理计算 =====
+function ringAreaKm2(ring) {
+  var a = 0, latSum = 0;
+  for (var i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    a += ring[j][0]*ring[i][1] - ring[i][0]*ring[j][1];
+    latSum += ring[i][1];
+  }
+  a = Math.abs(a) / 2;
+  var midLat = latSum / ring.length;
+  return a * 111.32 * 111.32 * Math.cos(midLat * Math.PI / 180);
+}
+function ringCentroidDeg(ring) {
+  var a = 0, cx = 0, cy = 0;
+  for (var i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    var f = ring[j][0]*ring[i][1] - ring[i][0]*ring[j][1];
+    a += f; cx += (ring[j][0]+ring[i][0])*f; cy += (ring[j][1]+ring[i][1])*f;
+  }
+  if (Math.abs(a) < 1e-12) {
+    var sx = 0, sy = 0;
+    for (var k = 0; k < ring.length; k++) { sx += ring[k][0]; sy += ring[k][1]; }
+    return [sx/ring.length, sy/ring.length];
+  }
+  return [cx/(3*a), cy/(3*a)];
+}
+
+// ===== Path2D 构建 =====
+function buildPath(rings) {
+  if (!HAS_PATH2D) return null;
+  var p = new Path2D();
+  for (var r = 0; r < rings.length; r++) {
+    var ring = rings[r];
+    p.moveTo(ring[0][0], ring[0][1]);
+    for (var k = 1; k < ring.length; k++) p.lineTo(ring[k][0], ring[k][1]);
+    p.closePath();
+  }
+  return p;
+}
+
+// ===== 邻接 =====
+function collectVerts(fi, ringDeg) {
+  for (var i = 0; i < ringDeg.length; i++) {
+    var vk = Math.round(ringDeg[i][0]/VERTEX_Q) + '_' + Math.round(ringDeg[i][1]/VERTEX_Q);
+    var arr = vertexMap.get(vk);
+    if (!arr) { vertexMap.set(vk, [fi]); }
+    else if (arr[arr.length-1] !== fi) { arr.push(fi); }
+  }
+}
+function finishAdjacency() {
+  var pairCount = new Map();
+  vertexMap.forEach(function(arr) {
+    if (arr.length < 2) return;
+    for (var i = 0; i < arr.length; i++) {
+      for (var j = i+1; j < arr.length; j++) {
+        if (arr[i] === arr[j]) continue;
+        var pk = arr[i] < arr[j] ? arr[i]+'_'+arr[j] : arr[j]+'_'+arr[i];
+        pairCount.set(pk, (pairCount.get(pk) || 0) + 1);
+      }
+    }
+  });
+  vertexMap.clear();
+  adjacency = countries.map(function(){ return []; });
+  var adjSet = countries.map(function(){ return {}; });
+  pairCount.forEach(function(c, pk) {
+    if (c < ADJ_MIN_SHARED) return;
+    var parts = pk.split('_');
+    var a = +parts[0], b = +parts[1];
+    if (!adjSet[a][b]) { adjSet[a][b] = true; adjacency[a].push(b); }
+    if (!adjSet[b][a]) { adjSet[b][a] = true; adjacency[b].push(a); }
+  });
+}
+
+// ===== 数据加载 =====
+function fetchWithTimeout(url, ms) {
+  return new Promise(function(resolve, reject) {
+    var done = false;
+    var timer = setTimeout(function() {
+      if (!done) { done = true; reject(new Error('超时')); }
+    }, ms);
+    fetch(url).then(function(r) {
+      if (done) return;
+      if (!r.ok) { done = true; clearTimeout(timer); reject(new Error('HTTP ' + r.status)); return; }
+      return r.json().then(function(j) {
+        if (!done) { done = true; clearTimeout(timer); resolve(j); }
+      });
+    }).catch(function(e) {
+      if (!done) { done = true; clearTimeout(timer); reject(e); }
+    });
+  });
+}
+function fetchFirst(urls) {
+  return new Promise(function(resolve, reject) {
+    function go(i) {
+      if (i >= urls.length) { reject(new Error('所有数据源均加载失败')); return; }
+      fetchWithTimeout(urls[i], FETCH_TIMEOUT).then(resolve).catch(function(){ go(i+1); });
+    }
+    go(0);
+  });
+}
+
+var JS  = 'https://cdn.jsdelivr.net/gh/nvkelso/natural-earth-vector@master/geojson/';
+var CDN = 'https://d2ad6b4ur7yvpq.cloudfront.net/naturalearth-3.3.0/';
+var COUNTRY_URLS = [JS+'ne_50m_admin_0_countries.geojson', CDN+'ne_50m_admin_0_countries.geojson'];
+var LAKE_URLS    = [JS+'ne_50m_lakes.geojson', CDN+'ne_50m_lakes.geojson'];
+var CITY_URLS    = [JS+'ne_50m_populated_places_simple.geojson', CDN+'ne_50m_populated_places_simple.geojson'];
+
+var loadingEl = document.getElementById('loading');
+function setLoading(t) { loadingEl.innerHTML = t; }
+
+fetchFirst(COUNTRY_URLS).then(function(data) {
+  processCountries(data);
+  data = null;
+  setLoading('国家就绪（' + countries.length + '个）<br>正在加载湖泊...');
+  return Promise.all([
+    fetchFirst(LAKE_URLS).catch(function(){ return null; }),
+    fetchFirst(CITY_URLS).catch(function(){ return null; })
+  ]);
+}).then(function(rl) {
+  setLoading('正在合并几何...');
+  setTimeout(function() {
+    try {
+      if (rl[0]) processLakes(rl[0]);
+      if (rl[1]) processCities(rl[1]);
+      rl = null;
+      finishAdjacency();
+      buildMergedPaths();
+      initWorld();
+    } catch (err) {
+      setLoading('⚠️ 渲染出错: ' + err.message);
+    }
+  }, 30);
+}).catch(function(err) {
+  setLoading('⚠️ 数据加载失败: ' + (err && err.message ? err.message : '请检查网络后刷新'));
+});
+
+// ===== 国家处理 =====
+function processCountries(data) {
+  data.features.forEach(function(f) {
+    var geom = f.geometry;
+    if (!geom) return;
+    var p = f.properties || {};
+    var name = p.ADMIN || p.ADMIN_NAME || p.NAME || '';
+    if (!name) return;
+    var polys = geom.type === 'Polygon' ? [geom.coordinates] :
+                geom.type === 'MultiPolygon' ? geom.coordinates : [];
+
+    var rawPieces = [];
+    for (var q = 0; q < polys.length; q++) {
+      var poly = polys[q];
+      if (polyOutsideBBox(poly)) continue;
+      if (poly.length < 1) continue;
+      var outer = clipRing(poly[0]);
+      if (outer.length < 3) continue;
+      var holes = [];
+      for (var r = 1; r < poly.length; r++) {
+        var h = clipRing(poly[r]);
+        if (h.length >= 3) holes.push(h);
+      }
+      rawPieces.push({ outer: outer, holes: holes });
+    }
+    if (!rawPieces.length) return;
+
+    var area = 0, biggest = null, biggestA = 0;
+    rawPieces.forEach(function(pc) {
+      var a = ringAreaKm2(pc.outer);
+      area += a;
+      pc.holes.forEach(function(h) { area -= ringAreaKm2(h); });
+      collectVerts(countries.length, pc.outer);
+      if (a > biggestA) { biggestA = a; biggest = pc.outer; }
+    });
+
+    var cDeg = ringCentroidDeg(biggest);
+    var bbox = [1e9, 1e9, -1e9, -1e9];
+
+    var pieces = rawPieces.map(function(pc) {
+      var fineRings = [projRing(rdp(pc.outer, RDP_FINE))];
+      var coarseRings = [projRing(rdp(pc.outer, RDP_COARSE))];
+      pc.holes.forEach(function(h) {
+        fineRings.push(projRing(rdp(h, RDP_FINE)));
+        coarseRings.push(projRing(rdp(h, RDP_COARSE)));
+      });
+      fineRings.forEach(function(rg) {
+        for (var k = 0; k < rg.length; k++) {
+          if (rg[k][0] < bbox[0]) bbox[0] = rg[k][0];
+          if (rg[k][0] > bbox[2]) bbox[2] = rg[k][0];
+          if (rg[k][1] < bbox[1]) bbox[1] = rg[k][1];
+          if (rg[k][1] > bbox[3]) bbox[3] = rg[k][1];
+        }
+      });
+      return {
+        fine: buildPath(fineRings),
+        coarse: buildPath(coarseRings),
+        outer: fineRings[0],
+        holes: fineRings.slice(1)
+      };
+    });
+
+    countries.push({
+      name: name,
+      pieces: pieces,
+      bbox: bbox,
+      cx: projX(cDeg[0]), cy: projY(cDeg[1]),
+      areaKm2: area,
+      color: countryColor(name)
+    });
+  });
+}
+
+// ===== 合并Path构建 =====
+function buildMergedPaths() {
+  mergeReady = false;
+  if (!HAS_ADDPATH) return;
+  var groups = {};
+  mergedOutline = new Path2D();
+  for (var i = 0; i < countries.length; i++) {
+    var c = countries[i];
+    for (var pi = 0; pi < c.pieces.length; pi++) {
+      var gp = c.pieces[pi].coarse || c.pieces[pi].fine;
+      if (!gp) continue;
+      if (!groups[c.color]) groups[c.color] = new Path2D();
+      groups[c.color].addPath(gp);
+      mergedOutline.addPath(gp);
+    }
+  }
+  mergedFill = [];
+  for (var col in groups) {
+    if (groups.hasOwnProperty(col)) mergedFill.push({ color: col, path: groups[col] });
+  }
+  mergeReady = mergedFill.length > 0;
+}
+
+function processLakes(data) {
+  lakeRings = [];
+  data.features.forEach(function(f) {
+    var geom = f.geometry;
+    if (!geom) return;
+    var polys = geom.type === 'Polygon' ? [geom.coordinates] :
+                geom.type === 'MultiPolygon' ? geom.coordinates : [];
+    polys.forEach(function(poly) {
+      if (polyOutsideBBox(poly)) return;
+      for (var r = 0; r < poly.length; r++) {
+        var ring = clipRing(poly[r]);
+        if (ring.length >= 3) lakeRings.push(projRing(ring));
+      }
+    });
+  });
+  lakePath = buildPath(lakeRings);
+}
+function processCities(data) {
+  data.features.forEach(function(f) {
+    if (f.geometry && f.geometry.type === 'Point') {
+      var c = f.geometry.coordinates;
+      if (c[0] >= BBOX[0] && c[0] <= BBOX[2] && c[1] >= BBOX[1] && c[1] <= BBOX[3]) {
+        cityPoints.push({
+          x: projX(c[0]), y: projY(c[1]),
+          name: (f.properties.name || ''),
+          pop: (f.properties.pop_max || 0)
+        });
+      }
+    }
+  });
+  cityPoints = cityPoints.filter(function(c){ return c.pop > 300000 && c.name; });
+  cityPoints.sort(function(a, b){ return b.pop - a.pop; });
+}
+
+function initWorld() {
+  world.x0 = projX(BBOX[0]); world.x1 = projX(BBOX[2]);
+  world.y0 = projY(BBOX[3]); world.y1 = projY(BBOX[1]);
+  world.w = world.x1 - world.x0; world.h = world.y1 - world.y0;
+  view.cx = (world.x0 + world.x1) / 2;
+  view.cy = (world.y0 + world.y1) / 2;
+  ready = true;
+  loadingEl.style.display = 'none';
+  document.getElementById('hud').style.display = 'block';
+  resize();
+}
+
+// ===== 文字 =====
+function drawArcText(g, text, x, y, r, bowUp, font, fill, strokeColor) {
+  g.save();
+  g.font = font;
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  var widths = [], total = 0;
+  for (var i = 0; i < text.length; i++) {
+    var w = g.measureText(text.charAt(i)).width;
+    widths.push(w); total += w;
+  }
+  var cx = x, cy = bowUp ? y + r : y - r;
+  var base = bowUp ? -Math.PI / 2 : Math.PI / 2;
+  var dir = bowUp ? 1 : -1;
+  var ang = base - dir * (total / 2) / r;
+  for (var j = 0; j < text.length; j++) {
+    var half = (widths[j] / 2) / r;
+    var a = ang + dir * half;
+    var px = cx + r * Math.cos(a);
+    var py = cy + r * Math.sin(a);
+    g.save();
+    g.translate(px, py);
+    g.rotate(a + (bowUp ? Math.PI / 2 : -Math.PI / 2));
+    if (strokeColor) {
+      g.strokeStyle = strokeColor; g.lineWidth = 1;
+      g.strokeText(text.charAt(j), 0, 0);
+    }
+    g.fillStyle = fill;
+    g.fillText(text.charAt(j), 0, 0);
+    g.restore();
+    ang += dir * 2 * half;
+  }
+  g.restore();
+}
+function drawLabel(g, text, x, y, font, fill, strokeColor, bold) {
+  g.font = (bold ? 'bold ' : '') + font;
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  if (strokeColor) { g.strokeStyle = strokeColor; g.lineWidth = 1; g.strokeText(text, x, y); }
+  g.fillStyle = fill;
+  g.fillText(text, x, y);
+}
+
+// ===== 命中测试 =====
+function pointInRing(wx, wy, ring) {
+  var inside = false;
+  var n = ring.length;
+  for (var i = 0, j = n - 1; i < n; j = i++) {
+    var xi = ring[i][0], yi = ring[i][1];
+    var xj = ring[j][0], yj = ring[j][1];
+    if (((yi > wy) !== (yj > wy)) &&
+        (wx < (xj - xi) * (wy - yi) / (yj - yi) + xi)) {
+      inside = !inside;
+    }
+  }
+  return inside;
+}
+function pointInPiece(wx, wy, pc) {
+  if (!pointInRing(wx, wy, pc.outer)) return false;
+  for (var h = 0; h < pc.holes.length; h++) {
+    if (pointInRing(wx, wy, pc.holes[h])) return false;
+  }
+  return true;
+}
+function hitTest(wx, wy) {
+  for (var i = 0; i < countries.length; i++) {
+    var c = countries[i];
+    if (wx < c.bbox[0] || wx > c.bbox[2] || wy < c.bbox[1] || wy > c.bbox[3]) continue;
+    for (var p = 0; p < c.pieces.length; p++) {
+      if (pointInPiece(wx, wy, c.pieces[p])) return i;
+    }
+  }
+  var best = -1, bestD = Infinity;
+  var threshold = TAP_FALLBACK_PX / view.s;
+  for (var j = 0; j < countries.length; j++) {
+    var cc = countries[j];
+    var dx = wx - cc.cx, dy = wy - cc.cy;
+    var d = Math.sqrt(dx*dx + dy*dy);
+    if (d < threshold && d < bestD) { bestD = d; best = j; }
+  }
+  return best;
+}
+
+function formatKm2(v) {
+  return String(Math.round(v)).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+function updateHudText(html) {
+  document.getElementById('hud').innerHTML = html;
+}
+function sanitizeView() {
+  if (!isFinite(view.cx) || !isFinite(view.cy) ||
+      !isFinite(view.s) || view.s <= 0 ||
+      !isFinite(sMin) || sMin <= 0) {
+    if (!isFinite(sMin) || sMin <= 0) { sMin = 100; sMax = 5000; }
+    view.cx = (world.x0 + world.x1) / 2;
+    view.cy = (world.y0 + world.y1) / 2;
+    view.s = sMin;
+  }
+}
+
+function buildVignette() {
+  var c = document.createElement('canvas');
+  c.width = Math.max(1, W); c.height = Math.max(1, H);
+  var g = c.getContext('2d');
+  var r = Math.hypot(W, H) / 2;
+  var grad = g.createRadialGradient(W/2, H/2, r*0.5, W/2, H/2, r);
+  grad.addColorStop(0, 'rgba(4,10,18,0)');
+  grad.addColorStop(1, 'rgba(4,10,18,0.5)');
+  g.fillStyle = grad;
+  g.fillRect(0, 0, W, H);
+  vignette = c;
+}
+
+function resize() {
+  W = window.innerWidth; H = window.innerHeight;
+  canvas.width = Math.max(1, Math.round(W * DPR));
+  canvas.height = Math.max(1, Math.round(H * DPR));
+  canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+  if (ready) {
+    sMin = Math.min(W / world.w, H / world.h);
+    sMax = sMin * MAX_ZOOM;
+    view.s = clamp(view.s, sMin, sMax);
+  }
+  buildVignette();
+  draw();
+}
+window.addEventListener('resize', resize);
+
+// ===== 每帧绘制 =====
+function draw() {
+  fpsFrames++;
+  var nowMs = Date.now();
+  if (nowMs - fpsLast >= 1000) {
+    fpsVal = fpsFrames;
+    fpsFrames = 0;
+    fpsLast = nowMs;
+  }
+
+  sanitizeView();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.fillStyle = SEA;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  if (!ready) return;
+
+  var zoomRatio = view.s / sMin;
+  var useCoarse = zoomRatio < LOD_SWITCH;
+
+  var k = view.s * DPR;
+  var tx = (W/2 - view.cx * view.s) * DPR;
+  var ty = (H/2 - view.cy * view.s) * DPR;
+  var worldT = function() { ctx.setTransform(k, 0, 0, k, tx, ty); };
+  var screenT = function() { ctx.setTransform(DPR, 0, 0, DPR, 0, 0); };
+
+  var vWx0 = view.cx - (W/2) / view.s, vWx1 = view.cx + (W/2) / view.s;
+  var vWy0 = view.cy - (H/2) / view.s, vWy1 = view.cy + (H/2) / view.s;
+  var visible = [];
+  for (var i = 0; i < countries.length; i++) {
+    var c = countries[i];
+    if (c.bbox[2] < vWx0 || c.bbox[0] > vWx1 ||
+        c.bbox[3] < vWy0 || c.bbox[1] > vWy1) continue;
+    visible.push(i);
+  }
+
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+
+  if (useCoarse && mergeReady) {
+    // ============ 快速路径：合并Path ============
+    worldT();
+    // 海岸发光
+    ctx.strokeStyle = 'rgba(80,120,150,0.18)';
+    ctx.lineWidth = 8 / view.s;
+    ctx.stroke(mergedOutline);
+    ctx.strokeStyle = 'rgba(100,140,170,0.25)';
+    ctx.lineWidth = 3 / view.s;
+    ctx.stroke(mergedOutline);
+    // 分色填充
+    for (var mi = 0; mi < mergedFill.length; mi++) {
+      ctx.fillStyle = mergedFill[mi].color;
+      ctx.fill(mergedFill[mi].path, 'evenodd');
+    }
+    // 湖泊
+    if (lakePath) { ctx.fillStyle = LAKE_FILL; ctx.fill(lakePath, 'evenodd'); }
+    // 国界
+    ctx.strokeStyle = BORDER;
+    ctx.lineWidth = 1.5 / view.s;
+    ctx.stroke(mergedOutline);
+    // 海岸描边
+    ctx.strokeStyle = BEACH;
+    ctx.lineWidth = 2 / view.s;
+    ctx.stroke(mergedOutline);
+    ctx.strokeStyle = COAST;
+    ctx.lineWidth = 1 / view.s;
+    ctx.stroke(mergedOutline);
+  } else {
+    // ============ 常规路径：可见剔除 + 逐国 ============
+    worldT();
+
+    function forEachVisiblePath(fn) {
+      for (var vi = 0; vi < visible.length; vi++) {
+        var cc = countries[visible[vi]];
+        for (var pi = 0; pi < cc.pieces.length; pi++) {
+          var path = cc.pieces[pi].fine || cc.pieces[pi].coarse;
+          if (path) fn(path);
+        }
+      }
+    }
+    function strokeFallback(rings, style, w) {
+      ctx.beginPath();
+      for (var r = 0; r < rings.length; r++) {
+        var ring = rings[r];
+        ctx.moveTo(ring[0][0], ring[0][1]);
+        for (var kk = 1; kk < ring.length; kk++) ctx.lineTo(ring[kk][0], ring[kk][1]);
+        ctx.closePath();
+      }
+      ctx.strokeStyle = style; ctx.lineWidth = w; ctx.stroke();
+    }
+
+    // 海岸发光
+    if (HAS_PATH2D) {
+      ctx.strokeStyle = 'rgba(80,120,150,0.18)'; ctx.lineWidth = 8 / view.s;
+      forEachVisiblePath(function(path) { ctx.stroke(path); });
+      ctx.strokeStyle = 'rgba(100,140,170,0.25)'; ctx.lineWidth = 3 / view.s;
+      forEachVisiblePath(function(path) { ctx.stroke(path); });
+    } else {
+      visible.forEach(function(ci) {
+        countries[ci].pieces.forEach(function(pc) {
+          var rings = [pc.outer].concat(pc.holes);
+          strokeFallback(rings, 'rgba(80,120,150,0.18)', 8/view.s);
+          strokeFallback(rings, 'rgba(100,140,170,0.25)', 3/view.s);
+        });
+      });
+    }
+
+    // 填充
+    if (HAS_PATH2D) {
+      visible.forEach(function(ci) {
+        var cc = countries[ci];
+        ctx.fillStyle = cc.color;
+        for (var pi = 0; pi < cc.pieces.length; pi++) {
+          var path = cc.pieces[pi].fine || cc.pieces[pi].coarse;
+          if (path) ctx.fill(path, 'evenodd');
+        }
+      });
+    } else {
+      visible.forEach(function(ci) {
+        var cc = countries[ci];
+        ctx.beginPath();
+        cc.pieces.forEach(function(pc) {
+          var rings = [pc.outer].concat(pc.holes);
+          for (var r = 0; r < rings.length; r++) {
+            var ring = rings[r];
+            ctx.moveTo(ring[0][0], ring[0][1]);
+            for (var kk = 1; kk < ring.length; kk++) ctx.lineTo(ring[kk][0], ring[kk][1]);
+            ctx.closePath();
+          }
+        });
+        ctx.fillStyle = cc.color;
+        ctx.fill('evenodd');
+      });
+    }
+
+    // 湖泊
+    if (lakePath) { ctx.fillStyle = LAKE_FILL; ctx.fill(lakePath, 'evenodd'); }
+    else if (lakeRings.length) {
+      ctx.beginPath();
+      lakeRings.forEach(function(ring) {
+        ctx.moveTo(ring[0][0], ring[0][1]);
+        for (var kk = 1; kk < ring.length; kk++) ctx.lineTo(ring[kk][0], ring[kk][1]);
+        ctx.closePath();
+      });
+      ctx.fillStyle = LAKE_FILL; ctx.fill('evenodd');
+    }
+
+    // 国界
+    ctx.strokeStyle = BORDER;
+    ctx.lineWidth = (zoomRatio > 3 ? 2 : 1.5) / view.s;
+    if (HAS_PATH2D) forEachVisiblePath(function(path) { ctx.stroke(path); });
+    else visible.forEach(function(ci) {
+      countries[ci].pieces.forEach(function(pc) {
+        strokeFallback([pc.outer].concat(pc.holes), BORDER, ctx.lineWidth);
+      });
+    });
+
+    // 海岸描边
+    ctx.strokeStyle = BEACH; ctx.lineWidth = 2 / view.s;
+    if (HAS_PATH2D) forEachVisiblePath(function(path) { ctx.stroke(path); });
+    else visible.forEach(function(ci) {
+      countries[ci].pieces.forEach(function(pc) {
+        strokeFallback([pc.outer].concat(pc.holes), BEACH, 2/view.s);
+      });
+    });
+    ctx.strokeStyle = COAST; ctx.lineWidth = 1 / view.s;
+    if (HAS_PATH2D) forEachVisiblePath(function(path) { ctx.stroke(path); });
+    else visible.forEach(function(ci) {
+      countries[ci].pieces.forEach(function(pc) {
+        strokeFallback([pc.outer].concat(pc.holes), COAST, 1/view.s);
+      });
+    });
+  }
+
+  // ---- 选中国家高亮 ----
+  if (selected >= 0 && countries[selected]) {
+    var sc = countries[selected];
+    worldT();
+    ctx.fillStyle = 'rgba(232,217,160,0.35)';
+    ctx.strokeStyle = 'rgba(232,217,160,0.95)';
+    ctx.lineWidth = 2.5 / view.s;
+    for (var spi = 0; spi < sc.pieces.length; spi++) {
+      var spath = (sc.pieces[spi].fine || sc.pieces[spi].coarse);
+      if (HAS_PATH2D && spath) {
+        ctx.fill(spath, 'evenodd');
+        ctx.stroke(spath);
+      } else {
+        var ringsH = [sc.pieces[spi].outer].concat(sc.pieces[spi].holes);
+        ctx.beginPath();
+        ringsH.forEach(function(ring) {
+          ctx.moveTo(ring[0][0], ring[0][1]);
+          for (var kk = 1; kk < ring.length; kk++) ctx.lineTo(ring[kk][0], ring[kk][1]);
+          ctx.closePath();
+        });
+        ctx.fill('evenodd'); ctx.stroke();
+      }
+    }
+  }
+
+  // ---- 邻国连线 ----
+  screenT();
+  if (selected >= 0 && adjacency[selected]) {
+    var oc = countries[selected];
+    var ox = W/2 + (oc.cx - view.cx) * view.s;
+    var oy = H/2 + (oc.cy - view.cy) * view.s;
+    ctx.setLineDash([6, 4]);
+    ctx.strokeStyle = 'rgba(232,217,160,0.55)';
+    ctx.lineWidth = 1.2;
+    adjacency[selected].forEach(function(ni) {
+      var nb = countries[ni];
+      if (!nb) return;
+      ctx.beginPath();
+      ctx.moveTo(ox, oy);
+      ctx.lineTo(W/2 + (nb.cx - view.cx) * view.s, H/2 + (nb.cy - view.cy) * view.s);
+      ctx.stroke();
+    });
+    ctx.setLineDash([]);
+    adjacency[selected].forEach(function(ni) {
+      var nb = countries[ni];
+      if (!nb) return;
+      ctx.fillStyle = 'rgba(232,217,160,0.7)';
+      ctx.beginPath();
+      ctx.arc(W/2 + (nb.cx - view.cx) * view.s, H/2 + (nb.cy - view.cy) * view.s, 3, 0, Math.PI*2);
+      ctx.fill();
+    });
+  }
+
+  // ---- 文字层 ----
+  ctx.save();
+  var mx0 = W/2 + (world.x0 - view.cx) * view.s;
+  var my0 = H/2 + (world.y0 - view.cy) * view.s;
+  var mw = world.w * view.s, mh = world.h * view.s;
+  var clipX = Math.max(0, mx0), clipY = Math.max(0, my0);
+  var clipW = Math.min(W - clipX, mw), clipH = Math.min(H - clipY, mh);
+  ctx.beginPath();
+  ctx.rect(clipX, clipY, clipW, clipH);
+  ctx.clip();
+
+  SEA_LABELS.forEach(function(L) {
+    var x = W/2 + (projX(L.lng) - view.cx) * view.s;
+    var y = H/2 + (projY(L.lat) - view.cy) * view.s;
+    if (x < -150 || x > W+150 || y < -80 || y > H+80) return;
+    drawArcText(ctx, L.t, x, y, L.r, true,
+      L.size + 'px ' + LABEL_FONT,
+      'rgba(130,170,200,0.55)', 'rgba(15,24,34,0.35)');
+  });
+
+  ctx.font = '12px ' + LABEL_FONT;
+  var nameCache = {};
+  function measureName(n) {
+    if (nameCache[n] === undefined) nameCache[n] = ctx.measureText(n).width;
+    return nameCache[n];
+  }
+  var drawnBoxes = [];
+  visible.forEach(function(ci) {
+    var cc = countries[ci];
+    var bw = (cc.bbox[2] - cc.bbox[0]) * view.s;
+    var bh = (cc.bbox[3] - cc.bbox[1]) * view.s;
+    var cn = cnName(cc.name, COUNTRY_CN);
+    var nw = measureName(cn) + 8;
+    var minZoom = (bw > 90 && bh > 40) ? 0 : 2.2;
+    if (zoomRatio < minZoom) return;
+    if (bw < nw * 1.1) return;
+    var x = W/2 + (cc.cx - view.cx) * view.s;
+    var y = H/2 + (cc.cy - view.cy) * view.s;
+    if (x < 20 || x > W-20 || y < 20 || y > H-20) return;
+    var box = [x-nw/2, y-7, x+nw/2, y+7];
+    for (var db = 0; db < drawnBoxes.length; db++) {
+      var b = drawnBoxes[db];
+      if (box[0] < b[2]+4 && box[2] > b[0]-4 && box[1] < b[3]+2 && box[3] > b[1]-2) return;
+    }
+    drawnBoxes.push(box);
+    drawLabel(ctx, cn, x, y, '12px ' + LABEL_FONT,
+      'rgba(58,47,29,0.65)', 'rgba(220,207,174,0.5)');
+  });
+
+  if (zoomRatio > 2.0) {
+    var popLimit = zoomRatio > 4 ? 300000 : (zoomRatio > 3 ? 1000000 : 2000000);
+    cityPoints.forEach(function(ct) {
+      if (ct.pop < popLimit) return;
+      var x = W/2 + (ct.x - view.cx) * view.s;
+      var y = H/2 + (ct.y - view.cy) * view.s;
+      if (x < 15 || x > W-15 || y < 15 || y > H-15) return;
+      ctx.fillStyle = 'rgba(58,47,29,0.6)';
+      ctx.beginPath(); ctx.arc(x, y, 2, 0, Math.PI*2); ctx.fill();
+      drawLabel(ctx, cnName(ct.name, CITY_CN), x, y - 9, '9.5px ' + LABEL_FONT,
+        'rgba(58,47,29,0.6)', 'rgba(220,207,174,0.45)');
+    });
+  }
+  ctx.restore();
+
+  // ---- 地图外压暗 + 装饰 ----
+  ctx.fillStyle = VOID;
+  ctx.beginPath();
+  ctx.rect(0, 0, W, H);
+  ctx.rect(clipX, clipY, clipW, clipH);
+  ctx.fill('evenodd');
+  drawMapFrame(clipX, clipY, clipW, clipH);
+  drawGraticule(clipX, clipY, clipW, clipH);
+
+  if (vignette) ctx.drawImage(vignette, 0, 0, W, H);
+  drawCompass();
+  drawFrame();
+
+  if (selected >= 0 && countries[selected]) {
+    var sf = countries[selected];
+    updateHudText('<b>' + cnName(sf.name, COUNTRY_CN) + '</b> · ' + sf.name +
+      ' · ' + formatKm2(sf.areaKm2) + ' km²' +
+      ' · 邻接' + (adjacency[selected] ? adjacency[selected].length : 0) + '国' +
+      ' · ' + fpsVal + 'fps');
+  } else {
+    updateHudText(zoomRatio.toFixed(2) + 'x | ' +
+      unprojY(view.cy).toFixed(1) + '°N, ' + unprojX(view.cx).toFixed(1) + '°E' +
+      (useCoarse ? (mergeReady ? ' | 合并Path' : ' | LOD粗') : ' | LOD细') +
+      ' | ' + fpsVal + 'fps');
+  }
+}
+
+// ===== 装饰层 =====
+function drawMapFrame(x, y, w, h) {
+  ctx.strokeStyle = GOLD + '0.7)'; ctx.lineWidth = 2;
+  ctx.strokeRect(x - 6, y - 6, w + 12, h + 12);
+  ctx.strokeStyle = GOLD + '0.45)'; ctx.lineWidth = 1;
+  ctx.strokeRect(x - 1.5, y - 1.5, w + 3, h + 3);
+}
+function drawGraticule(fx, fy, fw, fh) {
+  var steps = [45, 30, 20, 15, 10, 5, 2, 1];
+  var pxPerDeg = view.s / 360;
+  var step = 1;
+  for (var i = 0; i < steps.length; i++) {
+    if (steps[i] * pxPerDeg >= 55) { step = steps[i]; break; }
+    step = steps[steps.length - 1];
+  }
+  ctx.save();
+  ctx.beginPath(); ctx.rect(fx, fy, fw, fh); ctx.clip();
+  ctx.strokeStyle = GOLD + '0.10)'; ctx.lineWidth = 1;
+  ctx.fillStyle = GOLD + '0.45)'; ctx.font = '9px monospace';
+  var lngMin = unprojX(view.cx - (W/2)/view.s);
+  var lngMax = unprojX(view.cx + (W/2)/view.s);
+  var latMin = unprojY(view.cy + (H/2)/view.s);
+  var latMax = unprojY(view.cy - (H/2)/view.s);
+  ctx.textAlign = 'center';
+  for (var lng = Math.ceil(lngMin/step)*step; lng <= lngMax; lng += step) {
+    var sx2 = W/2 + (projX(lng) - view.cx) * view.s;
+    ctx.beginPath(); ctx.moveTo(sx2, fy); ctx.lineTo(sx2, fy + fh); ctx.stroke();
+    ctx.fillText(Math.round(lng) + '°', sx2, fy + 12);
+  }
+  ctx.textAlign = 'left';
+  for (var lat = Math.ceil(latMin/step)*step; lat <= latMax; lat += step) {
+    var sy2 = H/2 + (projY(lat) - view.cy) * view.s;
+    ctx.beginPath(); ctx.moveTo(fx, sy2); ctx.lineTo(fx + fw, sy2); ctx.stroke();
+    ctx.fillText(Math.round(lat) + '°', fx + 4, sy2 - 4);
+  }
+  ctx.restore();
+}
+function drawCompass() {
+  var x = W - 44, y = 52;
+  ctx.save();
+  ctx.strokeStyle = GOLD + '0.6)'; ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.arc(x, y, 15, 0, Math.PI*2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(x, y, 11, 0, Math.PI*2); ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x, y-9); ctx.lineTo(x+3.5, y+5); ctx.lineTo(x, y+2); ctx.lineTo(x-3.5, y+5);
+  ctx.closePath();
+  ctx.fillStyle = GOLD + '0.85)'; ctx.fill();
+  ctx.font = 'bold 10px monospace'; ctx.textAlign = 'center';
+  ctx.fillText('N', x, y - 20);
+  ctx.restore();
+}
+function drawFrame() {
+  var m1 = 10, m2 = 16;
+  ctx.save();
+  ctx.strokeStyle = GOLD + '0.55)'; ctx.lineWidth = 2;
+  ctx.strokeRect(m1, m1, W - m1*2, H - m1*2);
+  ctx.strokeStyle = GOLD + '0.3)'; ctx.lineWidth = 1;
+  ctx.strokeRect(m2, m2, W - m2*2, H - m2*2);
+  ctx.fillStyle = GOLD + '0.55)';
+  [[m1,m1],[W-m1,m1],[m1,H-m1],[W-m1,H-m1]].forEach(function(c) {
+    ctx.save(); ctx.translate(c[0], c[1]); ctx.rotate(Math.PI/4);
+    ctx.fillRect(-3.5, -3.5, 7, 7);
+    ctx.restore();
+  });
+  ctx.restore();
+}
+
+// ===== 手势 =====
+var pointers = new Map();
+var lastTap = null;
+var rafPending = false;
+function requestDraw() {
+  if (rafPending) return;
+  rafPending = true;
+  requestAnimationFrame(function() { rafPending = false; draw(); });
+}
+canvas.addEventListener('pointerdown', function(e) {
+  e.preventDefault();
+  try { canvas.setPointerCapture(e.pointerId); } catch(err) {}
+  pointers.set(e.pointerId, {
+    x: e.clientX, y: e.clientY,
+    startX: e.clientX, startY: e.clientY,
+    t: Date.now(), moved: false
+  });
+});
+canvas.addEventListener('pointermove', function(e) {
+  var p = pointers.get(e.pointerId);
+  if (!p) return;
+  if (!p.moved &&
+      Math.hypot(e.clientX - p.startX, e.clientY - p.startY) > TAP_MOVE_LIMIT) {
+    p.moved = true; lastTap = null;
+  }
+  var prevX = p.x, prevY = p.y;
+  p.x = e.clientX; p.y = e.clientY;
+  if (pointers.size === 1) {
+    view.cx -= (e.clientX - prevX) / view.s;
+    view.cy -= (e.clientY - prevY) / view.s;
+    view.cx = clamp(view.cx, world.x0, world.x1);
+    view.cy = clamp(view.cy, world.y0, world.y1);
+    requestDraw();
+  } else if (pointers.size === 2) {
+    var ids = Array.from(pointers.keys());
+    var other = pointers.get(ids[0] === e.pointerId ? ids[1] : ids[0]);
+    if (!other) return;
+    var prevDist = Math.hypot(prevX - other.x, prevY - other.y);
+    var newDist  = Math.hypot(e.clientX - other.x, e.clientY - other.y);
+    if (prevDist < 5) return;
+    var ratio = clamp(newDist / prevDist, 1 / ZOOM_STEP_MAX, ZOOM_STEP_MAX);
+    var prevMid = { x: (prevX + other.x) / 2, y: (prevY + other.y) / 2 };
+    var newMid  = { x: (e.clientX + other.x) / 2, y: (e.clientY + other.y) / 2 };
+    var wx = view.cx + (prevMid.x - W / 2) / view.s;
+    var wy = view.cy + (prevMid.y - H / 2) / view.s;
+    view.s = clamp(view.s * ratio, sMin, sMax);
+    view.cx = wx - (newMid.x - W / 2) / view.s;
+    view.cy = wy - (newMid.y - H / 2) / view.s;
+    view.cx = clamp(view.cx, world.x0, world.x1);
+    view.cy = clamp(view.cy, world.y0, world.y1);
+    requestDraw();
+  }
+});
+function endPointer(e) {
+  var p = pointers.get(e.pointerId);
+  pointers.delete(e.pointerId);
+  if (p && pointers.size === 0) {
+    var now = Date.now();
+    var isTap = !p.moved && (now - p.t) < TAP_TIME_LIMIT;
+    if (isTap) {
+      if (lastTap && now - lastTap.t < 350 &&
+          Math.hypot(p.startX - lastTap.x, p.startY - lastTap.y) < 40) {
+        zoomAt(p.startX, p.startY, 1.8);
+        lastTap = null;
+      } else {
+        lastTap = { x: p.startX, y: p.startY, t: now };
+        handleTap(p.startX, p.startY);
+      }
+    } else { lastTap = null; }
+  }
+}
+canvas.addEventListener('pointerup', endPointer);
+canvas.addEventListener('pointercancel', endPointer);
+window.addEventListener('blur', function() { pointers.clear(); });
+
+function handleTap(sx2, sy2) {
+  if (!ready) return;
+  var wx = view.cx + (sx2 - W / 2) / view.s;
+  var wy = view.cy + (sy2 - H / 2) / view.s;
+  var hit = hitTest(wx, wy);
+  selected = (hit === selected) ? -1 : hit;
+  requestDraw();
+}
+function zoomAt(sx2, sy2, factor) {
+  var wx = view.cx + (sx2 - W / 2) / view.s;
+  var wy = view.cy + (sy2 - H / 2) / view.s;
+  view.s = clamp(view.s * factor, sMin, sMax);
+  view.cx = wx - (sx2 - W / 2) / view.s;
+  view.cy = wy - (sy2 - H / 2) / view.s;
+  view.cx = clamp(view.cx, world.x0, world.x1);
+  view.cy = clamp(view.cy, world.y0, world.y1);
+  requestDraw();
+}
+canvas.addEventListener('wheel', function(e) {
+  e.preventDefault();
+  zoomAt(e.clientX, e.clientY, e.deltaY < 0 ? 1.15 : 1 / 1.15);
+}, { passive: false });
+
+resize();
+</script>
+</body>
+</html>
