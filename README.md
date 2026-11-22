@@ -1,2 +1,2 @@
-# europe-map
+# zhentan
 My strategy map game
