@@ -17,7 +17,6 @@ body{font-family:"Songti SC","STSong","SimSun","Noto Serif SC",Georgia,serif;
   color:var(--ink);user-select:none;touch-action:manipulation}
 .stage{position:fixed;inset:0;overflow:hidden}
 
-/* 竖屏提示 */
 #rotate-tip{position:fixed;inset:0;z-index:99;background:#05070b;display:none;
   flex-direction:column;align-items:center;justify-content:center;gap:22px}
 body.portrait #rotate-tip{display:flex}
@@ -60,7 +59,7 @@ body.portrait #rotate-tip{display:flex}
 .fl2{animation:winFlk 11s steps(1) infinite 2s}
 @keyframes winFlk{0%,100%{opacity:.85}10%{opacity:.15}12%{opacity:.85}60%{opacity:.85}62%{opacity:.2}64%{opacity:.85}}
 
-/* ===== 屏幕切换（快速渐隐渐现） ===== */
+/* ===== 屏幕切换（快速） ===== */
 .screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
   justify-content:center;overflow:hidden;
   opacity:0;pointer-events:none;transform:translateX(30px);
@@ -163,10 +162,6 @@ body.portrait #rotate-tip{display:flex}
 @keyframes docIn{0%{transform:translate(-50%,-90%);opacity:0}
   18%{opacity:1}80%{transform:translate(-50%,34%);opacity:1}
   100%{transform:translate(-50%,44%);opacity:0}}
-.bag-flap{position:absolute;left:50%;top:24%;width:52%;transform:translateX(-50%);
-  transform-origin:top center;z-index:3;transition:transform .5s var(--ease);
-  rotateX hidden}
-.load-wrap.flap .bag-flap{transform:translateX(-50%) rotateX(0deg)}
 .load-wrap.seal .bag-seal{animation:sealIn .45s .1s var(--ease) both}
 .bag-seal{opacity:0}
 @keyframes sealIn{from{opacity:0;transform:scale(1.6)}to{opacity:1;transform:scale(1)}}
@@ -199,7 +194,7 @@ body.portrait #rotate-tip{display:flex}
 .hub-pts b{font-size:clamp(15px,2.8vh,20px);color:var(--gold-hi);letter-spacing:.1em;
   font-family:Georgia,serif;transition:transform .3s var(--ease)}
 .hub-pts b.pulse{transform:scale(1.25)}
-.hub-pts span{font-size:clamp(8px,1.5vh,10px);letter-spacing:.3em;color:var(--ink-dim);writing-mode:horizontal-tb}
+.hub-pts span{font-size:clamp(8px,1.5vh,10px);letter-spacing:.3em;color:var(--ink-dim)}
 .hub-entries{display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(8px,1.4vw,16px);
   width:min(960px,94vw);margin-top:clamp(8px,1.8vh,16px);animation:riseIn .7s .15s var(--ease) both}
 .ebtn{position:relative;overflow:hidden;cursor:pointer;text-align:left;font-family:inherit;
@@ -223,7 +218,7 @@ body.portrait #rotate-tip{display:flex}
   overflow:hidden;text-overflow:ellipsis}
 .ebadge{position:absolute;top:8px;right:10px;font-size:9px;letter-spacing:.25em;
   color:var(--gold);border:1px solid rgba(217,178,106,.4);padding:1px 7px}
-/* 嫌疑人栏 */
+.ebadge.count{color:#0d111a;background:var(--gold);border-color:var(--gold);font-weight:700}
 .hub-bottom{width:min(960px,94vw);margin-top:clamp(8px,1.8vh,16px);flex:none;
   animation:riseIn .8s .3s var(--ease) both}
 .hub-bottom .row-label{display:flex;align-items:center;gap:10px;margin-bottom:clamp(5px,1.2vh,10px)}
@@ -247,6 +242,67 @@ body.portrait #rotate-tip{display:flex}
   .hub-bottom{display:none}
   .ebtn i{display:none}
 }
+
+/* ===== 案发现场 ===== */
+.scene-top{display:flex;align-items:center;gap:clamp(10px,2vw,20px);width:min(960px,94vw);flex:none;
+  padding:clamp(5px,1.2vh,10px) clamp(12px,2vw,20px);
+  border:1px solid rgba(217,178,106,.22);border-left:3px solid var(--gold-dark);
+  background:rgba(12,16,24,.78);backdrop-filter:blur(4px);animation:riseIn .5s var(--ease) both}
+.scene-top .st-name{font-size:clamp(13px,2.4vh,16px);letter-spacing:.25em;color:#e8e0cd;white-space:nowrap}
+.scene-top .st-prog{font-size:clamp(9px,1.7vh,11px);letter-spacing:.2em;color:var(--ink-dim);white-space:nowrap}
+.scene-top .st-prog b{color:var(--gold)}
+.scene-pts{margin-left:auto;display:flex;align-items:center;gap:8px;flex:none}
+.scene-pts svg{width:clamp(14px,2.6vh,17px);height:clamp(14px,2.6vh,17px);
+  stroke:var(--gold);fill:none;stroke-width:1.8;stroke-linecap:round}
+.scene-pts b{font-size:clamp(14px,2.6vh,18px);color:var(--gold-hi);font-family:Georgia,serif;
+  transition:transform .3s var(--ease)}
+.scene-pts b.pulse{transform:scale(1.3)}
+.scene-pts span{font-size:clamp(8px,1.5vh,10px);letter-spacing:.25em;color:var(--ink-dim)}
+.scene-stage{flex:1;width:min(960px,94vw);min-height:0;margin-top:clamp(6px,1.4vh,12px);
+  display:flex;align-items:center;justify-content:center;animation:riseIn .6s .1s var(--ease) both}
+.scene-box{position:relative;width:100%;height:100%;max-height:100%;
+  border:1px solid rgba(217,178,106,.25);background:#070a11;overflow:hidden}
+.scene-box svg.carriage{width:100%;height:100%;display:block}
+/* 热点 */
+.hotspot{position:absolute;cursor:pointer;transform:translate(-50%,-50%);z-index:3}
+.hotspot .hs-dot{width:clamp(18px,3.6vh,26px);height:clamp(18px,3.6vh,26px);border-radius:50%;
+  border:1.5px solid var(--gold);background:rgba(217,178,106,.12);
+  display:grid;place-items:center;position:relative;
+  transition:transform .25s var(--ease),background .25s}
+.hotspot .hs-dot::before{content:"";position:absolute;inset:-7px;border-radius:50%;
+  border:1px solid rgba(217,178,106,.45);animation:hsRing 2s var(--ease) infinite}
+@keyframes hsRing{0%{transform:scale(.7);opacity:.9}80%{transform:scale(1.5);opacity:0}100%{opacity:0}}
+.hotspot .hs-dot svg{width:55%;height:55%;stroke:var(--gold);fill:none;stroke-width:2;stroke-linecap:round}
+.hotspot:hover .hs-dot{transform:scale(1.2);background:rgba(217,178,106,.3)}
+.hotspot:active .hs-dot{transform:scale(.95)}
+.hotspot.done{pointer-events:none;opacity:.28}
+.hotspot.done .hs-dot::before{display:none}
+/* 搜查波纹爆发 */
+.hs-burst{position:absolute;left:50%;top:50%;width:10px;height:10px;border-radius:50%;
+  transform:translate(-50%,-50%);background:radial-gradient(circle,rgba(245,226,179,.9),transparent 70%);
+  animation:hsBurst .6s var(--ease) forwards;pointer-events:none;z-index:4}
+@keyframes hsBurst{from{width:10px;height:10px;opacity:1}to{width:150px;height:150px;opacity:0}}
+.scene-hint{width:min(960px,94vw);flex:none;margin-top:clamp(4px,1vh,8px);
+  font-size:clamp(9px,1.6vh,11px);letter-spacing:.18em;color:var(--ink-dim);
+  text-align:center;animation:riseIn .7s .2s var(--ease) both;white-space:nowrap}
+.scene-hint b{color:var(--gold)}
+
+/* ===== 物证弹窗（卡片式） ===== */
+.ev-card{position:relative;width:min(360px,82vw);background:
+  linear-gradient(160deg,#e8dcc0 0%,#d9cba6 60%,#c9b98f 100%);
+  border:1px solid #8a7a58;padding:16px 18px 14px;
+  transform:scale(.85) rotate(-2deg);opacity:0;
+  transition:transform .4s var(--ease),opacity .4s var(--ease)}
+.modal-backdrop.open .ev-card{transform:scale(1) rotate(0);opacity:1}
+.ev-card::before{content:"";position:absolute;inset:5px;border:1px dashed rgba(122,104,66,.5);pointer-events:none}
+.ev-card .ev-tag{position:absolute;top:10px;right:12px;font-size:10px;letter-spacing:.25em;
+  color:#fff;background:#8e2f33;padding:2px 9px}
+.ev-card h4{font-size:17px;letter-spacing:.2em;color:#3d3220;margin-bottom:2px}
+.ev-card .ev-kind{font-size:10px;letter-spacing:.3em;color:#8a7a58;margin-bottom:10px}
+.ev-card p{font-size:12px;line-height:1.9;letter-spacing:.05em;color:#4a3f28;
+  text-align:justify;margin-bottom:14px}
+.ev-card .m-action{color:#6b5324;border-color:#8a7a58;background:rgba(122,104,66,.12)}
+.ev-card .m-action:hover{background:rgba(122,104,66,.25)}
 
 /* ===== 功能占位页 ===== */
 .feat-body{flex:1;width:min(760px,90vw);min-height:0;overflow-y:auto;
@@ -295,7 +351,6 @@ body.portrait #rotate-tip{display:flex}
   transition:background .3s,transform .22s var(--ease)}
 .m-action:hover{background:rgba(217,178,106,.28)}
 .m-action:active{transform:scale(.97)}
-/* 教程弹窗列表 */
 .tut-item{display:flex;gap:12px;padding:10px 2px;border-bottom:1px dashed rgba(255,255,255,.08);align-items:flex-start}
 .tut-item:last-child{border-bottom:none}
 .tut-item .t-ic{width:26px;height:26px;flex:none;margin-top:2px}
@@ -417,12 +472,11 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;heigh
       </svg>
       <div class="ver-line">
         <span class="rule"></span>
-        <span>VER 0.1.0 · ALPHA — 序 章 卷 宗</span>
+        <span>VER 0.2.0 · ALPHA — 第 一 章</span>
         <span class="rule"></span>
       </div>
       <div class="ver-tags">多章节<i>·</i>多结局<i>·</i>逻辑链推理</div>
     </header>
-
     <nav class="menu">
       <button class="mbtn disabled" data-act="continue">
         <span class="mbtn-icon"><svg viewBox="0 0 24 24"><path d="M7,4 L17,4 L17,20 L12,16.5 L7,20 Z"/></svg></span>
@@ -471,7 +525,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;heigh
   <!-- ===== 档案袋加载页 ===== -->
   <section class="screen" id="scr-loading">
     <div class="load-wrap" id="loadWrap">
-      <!-- 秘密文件 -->
       <svg class="bag-doc" viewBox="0 0 90 120">
         <defs><linearGradient id="docG" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stop-color="#e8dcc0"/><stop offset="1" stop-color="#c4b494"/></linearGradient></defs>
@@ -484,7 +537,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;heigh
         <circle cx="66" cy="92" r="12" fill="none" stroke="#8e2f33" stroke-width="2" opacity=".7"/>
         <text x="66" y="96" text-anchor="middle" font-size="9" fill="#8e2f33" opacity=".8" style="font-weight:700">绝密</text>
       </svg>
-      <!-- 档案袋：左右两半（同图双份，裂开时各走各的） -->
       <div class="bag-half hL"><svg viewBox="0 0 200 200" style="width:100%;height:100%">
         <g>
           <rect x="30" y="60" width="140" height="110" rx="6" fill="#1a2130" stroke="#3a4356" stroke-width="2"/>
@@ -494,7 +546,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;heigh
           <text x="100" y="46" text-anchor="middle" font-size="11" fill="#d9b26a" letter-spacing="2">DF-001</text>
           <rect x="44" y="146" width="70" height="5" fill="#0e1320"/>
           <rect x="44" y="156" width="48" height="4" fill="#0e1320"/>
-          <!-- 火漆封印 -->
           <g class="bag-seal">
             <circle cx="100" cy="118" r="14" fill="#8e2f33" stroke="#5e1f22" stroke-width="2"/>
             <circle cx="100" cy="118" r="9" fill="none" stroke="#c98a8d" stroke-width="1.5" opacity=".7"/>
@@ -534,7 +585,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;heigh
         <b id="ptsNum">20</b><span>调查点数</span>
       </div>
     </div>
-
     <div class="hub-entries">
       <button class="ebtn" data-entry="scene">
         <span class="ebadge" id="bdg-scene" style="display:none">新手</span>
@@ -554,6 +604,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;heigh
         <b>审讯室</b><i>传唤嫌疑人 · 攻心博弈</i>
       </button>
       <button class="ebtn" data-entry="mind">
+        <span class="ebadge" id="bdg-mind" style="display:none"></span>
         <span class="e-ic"><svg viewBox="0 0 24 24">
           <circle cx="6" cy="6" r="2.4"/><circle cx="18" cy="6" r="2.4"/>
           <circle cx="12" cy="18" r="2.4"/>
@@ -561,6 +612,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;heigh
         <b>思绪网格</b><i>排列线索 · 串联真相</i>
       </button>
       <button class="ebtn" data-entry="evidence">
+        <span class="ebadge count" id="bdg-ev" style="display:none">0</span>
         <span class="e-ic"><svg viewBox="0 0 24 24">
           <rect x="4" y="4" width="16" height="16" rx="2"/>
           <path d="M4,9 L20,9 M9,9 L9,20"/>
@@ -568,14 +620,146 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;heigh
         <b>档案袋</b><i>物证核验 · 状态标记</i>
       </button>
     </div>
-
     <div class="hub-bottom">
       <div class="row-label"><b>嫌疑人名单 · 四 名</b><span class="rl"></span></div>
       <div class="sus-row" id="susRow"></div>
     </div>
   </section>
 
-  <!-- ===== 功能占位页（按后续步骤填充） ===== -->
+  <!-- ===== 案发现场 ===== -->
+  <section class="screen" id="scr-scene">
+    <div class="scene-top">
+      <button class="back-btn" data-act="hubback">
+        <svg viewBox="0 0 24 24"><path d="M16,5 L8,12 L16,19"/></svg>返回
+      </button>
+      <span class="st-name">7 号包厢</span>
+      <span class="st-prog">搜查进度 <b id="sceneProg">0 / 6</b></span>
+      <div class="scene-pts">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/></svg>
+        <b id="scenePts">20</b><span>点数</span>
+      </div>
+    </div>
+
+    <div class="scene-stage">
+      <div class="scene-box" id="sceneBox">
+        <!-- 车厢场景：雨窗、包厢、尸体、小桌、走廊 -->
+        <svg class="carriage" viewBox="0 0 960 480" preserveAspectRatio="xMidYMid slice">
+          <defs>
+            <linearGradient id="wallG" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#1a2231"/><stop offset="1" stop-color="#10151f"/></linearGradient>
+            <linearGradient id="floorG" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#12161f"/><stop offset="1" stop-color="#0a0d14"/></linearGradient>
+            <radialGradient id="lampG" cx="50%" cy="50%" r="50%">
+              <stop offset="0" stop-color="rgba(240,200,110,.32)"/>
+              <stop offset="1" stop-color="rgba(240,200,110,0)"/></radialGradient>
+            <linearGradient id="rainWinG" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#16202e"/><stop offset="1" stop-color="#0c1119"/></linearGradient>
+          </defs>
+          <!-- 墙面与地板 -->
+          <rect width="960" height="480" fill="url(#wallG)"/>
+          <rect y="340" width="960" height="140" fill="url(#floorG)"/>
+          <line x1="0" y1="340" x2="960" y2="340" stroke="#232c3d" stroke-width="2"/>
+          <!-- 木纹墙裙 -->
+          <g stroke="#0d1119" stroke-width="1" opacity=".7">
+            <line x1="0" y1="360" x2="960" y2="360"/><line x1="0" y1="390" x2="960" y2="390"/>
+            <line x1="0" y1="420" x2="960" y2="420"/><line x1="0" y1="450" x2="960" y2="450"/>
+          </g>
+          <!-- 顶灯与光晕 -->
+          <circle cx="480" cy="40" r="130" fill="url(#lampG)"/>
+          <rect x="468" y="18" width="24" height="10" rx="3" fill="#0a0e16"/>
+          <ellipse cx="480" cy="34" rx="16" ry="6" fill="#f0c86e" opacity=".85"/>
+          <!-- 车窗（雨夜） -->
+          <g>
+            <rect x="600" y="90" width="240" height="150" rx="8" fill="url(#rainWinG)" stroke="#3a4356" stroke-width="3"/>
+            <line x1="720" y1="90" x2="720" y2="240" stroke="#3a4356" stroke-width="4"/>
+            <!-- 窗外雨线 -->
+            <g stroke="#41506a" stroke-width="1.2" opacity=".55">
+              <line x1="630" y1="105" x2="624" y2="125"/><line x1="660" y1="130" x2="654" y2="150"/>
+              <line x1="690" y1="100" x2="684" y2="120"/><line x1="750" y1="115" x2="744" y2="135"/>
+              <line x1="790" y1="140" x2="784" y2="160"/><line x1="820" y1="105" x2="814" y2="125"/>
+              <line x1="645" y1="180" x2="639" y2="200"/><line x1="770" y1="190" x2="764" y2="210"/>
+              <line x1="805" y1="175" x2="799" y2="195"/>
+            </g>
+            <ellipse cx="640" cy="230" rx="26" ry="7" fill="#0e1622" opacity=".8"/>
+            <ellipse cx="770" cy="238" rx="30" ry="8" fill="#0e1622" opacity=".7"/>
+          </g>
+          <!-- 包厢门（虚掩） -->
+          <g>
+            <rect x="70" y="70" width="120" height="270" rx="4" fill="#151b28" stroke="#2e3749" stroke-width="3"/>
+            <rect x="82" y="82" width="96" height="246" fill="none" stroke="#232c3d" stroke-width="2"/>
+            <rect x="160" y="180" width="10" height="34" rx="4" fill="#3a4356"/>
+            <circle cx="165" cy="197" r="3" fill="#d9b26a" opacity=".8"/>
+          </g>
+          <!-- 衣帽钩与帽子 -->
+          <g>
+            <rect x="228" y="90" width="6" height="60" fill="#232c3d"/>
+            <path d="M216,120 Q231,102 246,120 L246,132 L216,132 Z" fill="#0e1420" stroke="#232c3d" stroke-width="1.5"/>
+          </g>
+          <!-- 下铺床 -->
+          <g>
+            <rect x="280" y="240" width="260" height="60" rx="5" fill="#1c2434" stroke="#2e3749" stroke-width="2"/>
+            <rect x="280" y="300" width="260" height="16" fill="#12161f"/>
+            <rect x="292" y="228" width="90" height="26" rx="8" fill="#252e42"/>
+            <rect x="270" y="200" width="14" height="130" fill="#161c29"/>
+            <rect x="536" y="200" width="14" height="130" fill="#161c29"/>
+            <!-- 床单褶皱 -->
+            <path d="M300,270 q30,-8 60,0 q30,8 60,0 q30,-8 60,0" stroke="#141a26" stroke-width="2" fill="none" opacity=".8"/>
+            <path d="M300,286 q40,-6 80,0 q40,6 80,0" stroke="#141a26" stroke-width="2" fill="none" opacity=".6"/>
+          </g>
+          <!-- 死者（仰卧剪影） -->
+          <g>
+            <ellipse cx="470" cy="392" rx="118" ry="30" fill="#080b12" opacity=".55"/>
+            <path d="M360,392 Q400,372 440,384 L470,372 Q520,368 556,390 Q540,406 470,402 Q420,406 360,392 Z" fill="#10151f"/>
+            <circle cx="368" cy="388" r="17" fill="#10151f"/>
+            <path d="M382,384 L430,392 M384,394 L432,398" stroke="#0c111a" stroke-width="8" stroke-linecap="round"/>
+            <path d="M540,388 L570,396 M542,396 L572,402" stroke="#0c111a" stroke-width="7" stroke-linecap="round"/>
+            <!-- 敞开的睡衣领口 -->
+            <path d="M440,380 L452,388 L440,396" stroke="#1e2637" stroke-width="3" fill="none"/>
+          </g>
+          <!-- 小桌（翻倒的茶杯、信） -->
+          <g>
+            <rect x="620" y="290" width="120" height="12" rx="3" fill="#1c2434" stroke="#2e3749" stroke-width="1.5"/>
+            <rect x="636" y="302" width="8" height="70" fill="#161c29"/>
+            <rect x="716" y="302" width="8" height="70" fill="#161c29"/>
+            <!-- 翻倒茶杯 -->
+            <g transform="rotate(112 668 282)">
+              <path d="M656,266 L680,266 L677,286 L659,286 Z" fill="#232c3d" stroke="#3a4356" stroke-width="1.5"/>
+              <path d="M680,270 Q690,274 678,280" fill="none" stroke="#3a4356" stroke-width="2"/>
+            </g>
+            <ellipse cx="640" cy="330" rx="34" ry="9" fill="#0d1420" opacity=".85"/>
+            <ellipse cx="628" cy="332" rx="16" ry="5" fill="#1a1210" opacity=".7"/>
+            <!-- 信纸 -->
+            <g transform="rotate(-8 760 316)">
+              <rect x="738" y="304" width="46" height="30" fill="#d9cba6" stroke="#8a7a58" stroke-width="1"/>
+              <line x1="744" y1="312" x2="778" y2="312" stroke="#8a7a58" stroke-width="1" opacity=".7"/>
+              <line x1="744" y1="318" x2="770" y2="318" stroke="#8a7a58" stroke-width="1" opacity=".7"/>
+              <line x1="744" y1="324" x2="774" y2="324" stroke="#8a7a58" stroke-width="1" opacity=".5"/>
+            </g>
+          </g>
+          <!-- 垃圾篓 -->
+          <g>
+            <path d="M880,330 L920,330 L914,392 L886,392 Z" fill="#151b28" stroke="#2e3749" stroke-width="2"/>
+            <line x1="884" y1="342" x2="916" y2="342" stroke="#232c3d" stroke-width="1.5"/>
+            <path d="M890,322 l8,-10 6,10 M902,320 l6,-12 7,12" stroke="#2a3242" stroke-width="2" fill="none"/>
+          </g>
+          <!-- 怀表（掉落在地板） -->
+          <g>
+            <circle cx="580" cy="430" r="13" fill="#1c2434" stroke="#3a4356" stroke-width="2"/>
+            <circle cx="580" cy="430" r="9" fill="#0e1420"/>
+            <line x1="580" y1="430" x2="580" y2="424" stroke="#d9b26a" stroke-width="1.5"/>
+            <line x1="580" y1="430" x2="584" y2="434" stroke="#d9b26a" stroke-width="1.2"/>
+            <circle cx="580" cy="444" r="2.5" fill="#3a4356"/>
+          </g>
+          <!-- 氛围压暗 -->
+          <rect width="960" height="480" fill="url(#lampG)" opacity=".35" style="mix-blend-mode:screen"/>
+        </svg>
+        <!-- 热点由 JS 动态插入 -->
+      </div>
+    </div>
+    <div class="scene-hint" id="sceneHint">点击 <b>发光标记</b> 搜查可疑之处 · 每次搜查消耗调查点数 · 物证自动收入档案袋</div>
+  </section>
+
+  <!-- ===== 功能占位页 ===== -->
   <section class="screen" id="scr-feat">
     <div class="page-head">
       <button class="back-btn" data-act="hubback">
@@ -591,6 +775,17 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;heigh
       </div>
     </div>
   </section>
+
+  <!-- ===== 物证获得弹窗 ===== -->
+  <div class="modal-backdrop" id="mdEvidence">
+    <div class="ev-card">
+      <span class="ev-tag">存 疑</span>
+      <h4 id="evName">—</h4>
+      <div class="ev-kind" id="evKind">—</div>
+      <p id="evDesc">—</p>
+      <button class="m-action" id="evOk">放 入 档 案 袋</button>
+    </div>
+  </div>
 
   <!-- ===== 剧本详情弹窗 ===== -->
   <div class="modal-backdrop" id="mdScript">
@@ -622,7 +817,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;heigh
       </div>
       <div class="tut-item">
         <span class="t-ic"><svg viewBox="0 0 24 24"><path d="M5,6 L19,6 L19,8 Q19,12 16,12 L8,12 Q5,12 5,8 Z"/><path d="M8,12 L8,20 M16,12 L16,20"/></svg></span>
-        <div class="t-tx"><b>案发现场</b><span>点击车厢中的可疑之处收集物证。物证有「存疑 / 已核验 / 已关联 / 被否认」四种状态。</span></div>
+        <div class="t-tx"><b>案发现场</b><span>点击车厢中的发光标记搜查物证，每次消耗 2~3 点。物证初始为「存疑」，可在档案袋核验。</span></div>
       </div>
       <div class="tut-item">
         <span class="t-ic"><svg viewBox="0 0 24 24"><rect x="4" y="3.5" width="16" height="13" rx="1.5"/><path d="M8.5,8.5 L11,8.5 M8.5,11.5 L13,11.5"/></svg></span>
@@ -742,7 +937,6 @@ const AudioSys = {
     g.gain.setValueAtTime(.1,t); g.gain.exponentialRampToValueAtTime(.001,t+.3);
     o.connect(g); g.connect(this.sfxBus); o.start(t); o.stop(t+.32);
   },
-  /* 新增音效：档案纸声（噪声脉冲） */
   paper(){
     if(!this.sfxOn || !this.ctx || this.ctx.state!=='running') return;
     const t=this.ctx.currentTime, dur=.28;
@@ -754,7 +948,6 @@ const AudioSys = {
     const g=this.ctx.createGain(); g.gain.value=.25;
     src.connect(bp); bp.connect(g); g.connect(this.sfxBus); src.start(t);
   },
-  /* 新增音效：撕裂 */
   tear(){
     if(!this.sfxOn || !this.ctx || this.ctx.state!=='running') return;
     const t=this.ctx.currentTime, dur=.4;
@@ -777,6 +970,28 @@ const AudioSys = {
     o.frequency.exponentialRampToValueAtTime(180,t+.35);
     g.gain.setValueAtTime(.09,t); g.gain.exponentialRampToValueAtTime(.001,t+.38);
     o.connect(g); g.connect(this.sfxBus); o.start(t); o.stop(t+.4);
+  },
+  /* 发现物证：清脆双音 */
+  discover(){
+    if(!this.sfxOn || !this.ctx || this.ctx.state!=='running') return;
+    const t=this.ctx.currentTime;
+    [[784,0],[1046.5,.12]].forEach(([f,dt])=>{
+      const o=this.ctx.createOscillator(), g=this.ctx.createGain();
+      o.type='sine'; o.frequency.value=f;
+      g.gain.setValueAtTime(0,t+dt);
+      g.gain.linearRampToValueAtTime(.12,t+dt+.02);
+      g.gain.exponentialRampToValueAtTime(.001,t+dt+.5);
+      o.connect(g); g.connect(this.sfxBus); o.start(t+dt); o.stop(t+dt+.52);
+    });
+  },
+  deny(){
+    if(!this.sfxOn || !this.ctx || this.ctx.state!=='running') return;
+    const t=this.ctx.currentTime;
+    const o=this.ctx.createOscillator(), g=this.ctx.createGain();
+    o.type='sawtooth'; o.frequency.setValueAtTime(220,t);
+    o.frequency.linearRampToValueAtTime(140,t+.18);
+    g.gain.setValueAtTime(.08,t); g.gain.exponentialRampToValueAtTime(.001,t+.22);
+    o.connect(g); g.connect(this.sfxBus); o.start(t); o.stop(t+.24);
   }
 };
 function wakeAudio(){
@@ -865,17 +1080,27 @@ document.querySelectorAll('.modal-backdrop').forEach(m=>
 const CASE = {
   points:20, maxPoints:20,
   tutorialDone:false,
-  evidences:[],  // {id,name,state} state: doubt|verified|linked|denied
+  searched:{},   // hotspotId -> true
+  evidences:[],  // {id,name,kind,desc,state}
   testimonies:[],
-  suspects:{}    // id -> {attitude,trust,alert,interrogated}
+  suspects:{}
 };
 function spendPoints(n){
   CASE.points=Math.max(0,CASE.points-n);
   const el=document.getElementById('ptsNum');
   el.textContent=CASE.points;
   el.classList.add('pulse'); setTimeout(()=>el.classList.remove('pulse'),300);
+  document.getElementById('scenePts').textContent=CASE.points;
+  return CASE.points;
 }
-function renderPoints(){ document.getElementById('ptsNum').textContent=CASE.points; }
+function renderPoints(){
+  document.getElementById('ptsNum').textContent=CASE.points;
+  document.getElementById('scenePts').textContent=CASE.points;
+}
+function updateEvBadge(){
+  const bdg=document.getElementById('bdg-ev');
+  if(CASE.evidences.length){ bdg.style.display='inline-block'; bdg.textContent=CASE.evidences.length; }
+}
 
 /* ================== 剧本数据 ================== */
 const SCRIPTS=[
@@ -939,7 +1164,7 @@ const SCRIPTS=[
         <line x1="130" y1="20" x2="130" y2="14"/></g></svg>`},
 ];
 
-/* ================== 嫌疑人数据（手绘剪影） ================== */
+/* ================== 嫌疑人数据 ================== */
 const SUSPECTS=[
   { id:'doctor', name:'白景瑞', role:'死者的私人医生', sil:'doctor' },
   { id:'secretary', name:'程叙', role:'死者的私人秘书', sil:'secretary' },
@@ -971,6 +1196,23 @@ function suspectSVG(kind){
   return `<svg viewBox="0 0 100 100">${heads[kind]||''}${base}</svg>`;
 }
 
+/* ================== 现场热点数据 ================== */
+/* pos 为场景容器内的百分比坐标，对应 SVG 场景构图 */
+const HOTSPOTS=[
+  { id:'letter', cost:2, x:79, y:66, name:'未寄出的信', kind:'文书 · 纸质',
+    desc:'死者手边的信纸，墨迹未干，只有开头一句：「我知道那晚是谁进了包厢——」其余部分被撕去。撕口很新，像是仓促之间撕的。' },
+  { id:'cup', cost:2, x:67, y:69, name:'打翻的红茶', kind:'容器 · 液体残留',
+    desc:'茶杯翻倒在地毯上，残液呈深褐色，靠近时能嗅到一丝不属于茶叶的苦味——像是某种药物的味道。需要鉴定确认。' },
+  { id:'window', cost:2, x:75.5, y:35, name:'车窗内侧的擦痕', kind:'痕迹 · 物理证据',
+    desc:'车窗插销被人从内侧打开过，插销上留有半枚模糊的擦痕。暴雨夜，开窗的人想做什么？通风？还是……递出什么东西？' },
+  { id:'watch', cost:2, x:60.5, y:90, name:'停摆的怀表', kind:'随身物 · 金属',
+    desc:'死者掉落在地的怀表，指针停在 23:47。表盖内侧刻着一个小小的「L」字。顾世坤的墓碑上，会不会也刻着同样的字母？' },
+  { id:'ticket', cost:2, x:91, y:76, name:'撕碎的票根', kind:'文书 · 纸质',
+    desc:'垃圾篓里的三张硬座票根，撕碎后又被水浸透。编号栏被刻意撕去一角——有人不想让某人出现在这节车厢的名单上。' },
+  { id:'nail', cost:3, x:37, y:81, name:'死者指甲缝的纤维', kind:'痕迹 · 微量物',
+    desc:'死者右手指甲缝里嵌着几缕深蓝色羊毛纤维——不是他睡衣的材质。他曾徒手抓过某个穿深蓝色外套的人。需要实验室比对。' },
+];
+
 /* ================== 剧本卡片 ================== */
 const grid=document.getElementById('scriptGrid');
 SCRIPTS.forEach((s,i)=>{
@@ -997,7 +1239,6 @@ SCRIPTS.forEach((s,i)=>{
   });
   grid.appendChild(card);
 });
-
 function openScriptModal(i){
   const s=SCRIPTS[i];
   document.getElementById('msTitle').textContent=s.name;
@@ -1010,25 +1251,21 @@ function openScriptModal(i){
   setTimeout(()=>{ b1.style.width='12%'; b2.style.width='8%'; },80);
 }
 
-/* ================== 档案袋加载动画流程 ================== */
+/* ================== 档案袋加载动画 ================== */
 document.getElementById('msStart').addEventListener('click',()=>{
   closeModal('mdScript');
   startLoading();
 });
-
 let loadingBusy=false;
 function startLoading(){
   if(loadingBusy) return;
   loadingBusy=true;
   const wrap=document.getElementById('loadWrap');
-  /* 重置动画状态 */
   wrap.classList.remove('flap','seal','split');
   document.getElementById('loadBar').style.width='0';
   document.getElementById('loadTip').innerHTML='卷 宗 归 档 · <b>DF-001 午夜列车</b>';
   goto('scr-loading');
   AudioSys.paper();
-
-  /* 文件塞入 → 封口 → 火漆 → 撕裂 → 进案件主界面 */
   setTimeout(()=>{ wrap.classList.add('flap'); AudioSys.paper(); }, 1750);
   setTimeout(()=>{ wrap.classList.add('seal'); AudioSys.click(); }, 2300);
   setTimeout(()=>{
@@ -1060,11 +1297,12 @@ SUSPECTS.forEach(su=>{
       <span class="s-tag" data-st="${su.id}">状 态 · 未 传 唤</span></span>`;
   el.addEventListener('click',()=>{
     AudioSys.click();
-    toast('审讯室将于下一步解锁——先去现场收集物证吧。');
+    const hasEv=CASE.evidences.length>0;
+    if(!hasEv) toast('手里还没有物证——先去「案发现场」搜查吧。');
+    else toast('审讯室将于下一步解锁。');
   });
   susRow.appendChild(el);
 });
-
 function updateSusTag(id){
   const s=CASE.suspects[id];
   const el=document.querySelector(`[data-st="${id}"]`);
@@ -1074,12 +1312,68 @@ function updateSusTag(id){
   el.textContent=`状 态 · ${mood}（态度${s.attitude}）`;
 }
 
-/* 四大入口 → 占位页 */
+/* ================== 案发现场 ================== */
+const sceneBox=document.getElementById('sceneBox');
+function buildHotspots(){
+  sceneBox.querySelectorAll('.hotspot').forEach(h=>h.remove());
+  HOTSPOTS.forEach(hs=>{
+    const el=document.createElement('div');
+    el.className='hotspot'+(CASE.searched[hs.id]?' done':'');
+    el.style.left=hs.x+'%'; el.style.top=hs.y+'%';
+    el.dataset.id=hs.id;
+    el.innerHTML=`<span class="hs-dot">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" fill="rgba(217,178,106,.5)" stroke="none"/>
+      <circle cx="12" cy="12" r="8.5"/></svg></span>`;
+    el.addEventListener('click',e=>{ e.stopPropagation(); searchHotspot(hs, el); });
+    sceneBox.appendChild(el);
+  });
+  renderSceneProgress();
+}
+function renderSceneProgress(){
+  const done=HOTSPOTS.filter(h=>CASE.searched[h.id]).length;
+  document.getElementById('sceneProg').textContent=`${done} / ${HOTSPOTS.length}`;
+}
+function searchHotspot(hs, el){
+  if(CASE.searched[hs.id]) return;
+  if(CASE.points < hs.cost){
+    AudioSys.deny();
+    toast(`调查点数不足（需要 ${hs.cost} 点）——把点数留给更关键的地方。`);
+    return;
+  }
+  CASE.searched[hs.id]=true;
+  spendPoints(hs.cost);
+  /* 搜查波纹 */
+  const burst=document.createElement('span');
+  burst.className='hs-burst';
+  el.appendChild(burst);
+  setTimeout(()=>burst.remove(),700);
+  el.classList.add('done');
+  renderSceneProgress();
+  /* 收录物证 */
+  const ev={ id:hs.id, name:hs.name, kind:hs.kind, desc:hs.desc, state:'doubt' };
+  CASE.evidences.push(ev);
+  updateEvBadge();
+  setTimeout(()=>{
+    AudioSys.discover(); AudioSys.paper();
+    document.getElementById('evName').textContent=hs.name;
+    document.getElementById('evKind').textContent=`物证类型 · ${hs.kind}`;
+    document.getElementById('evDesc').textContent=hs.desc;
+    openModal('mdEvidence');
+  }, 350);
+  /* 教学提示：第一次搜完给指引 */
+  if(CASE.evidences.length===1){
+    setTimeout(()=>toast('物证已收入档案袋（状态：存疑）。继续搜查，或去审讯室出示它。',3200),4600);
+  }
+  /* 全部搜完 */
+  if(HOTSPOTS.every(h=>CASE.searched[h.id])){
+    setTimeout(()=>toast('现场搜查完毕。审讯室已准备好接待你的嫌疑人。',3000),5600);
+  }
+}
+document.getElementById('evOk').addEventListener('click',()=>closeModal('mdEvidence'));
+
+/* ================== 功能入口 ================== */
 const FEATS={
-  scene:{ title:'案发现场', sub:'CRIME SCENE · 第一节车厢', head:'暴雨 · 失联 · 尸体与一封未寄出的信',
-    html:`<p>死者<b>顾世坤</b>倒在 7 号包厢，医生初步判断为心脏骤停——但现场有一处细节与此矛盾。</p>
-      <p>你可以点击车厢内的<b>可疑热点</b>进行搜查，每次搜查消耗调查点数，获得的物证将进入档案袋，初始状态为<b>「存疑」</b>。</p>
-      <p>搜查到的物证，将在审讯中成为你的筹码。</p>`},
+  scene:null, /* scene 有专属界面，不走占位 */
   interro:{ title:'审讯室', sub:'INTERROGATION · 四名嫌疑人', head:'每一次提问，都是一场博弈',
     html:`<p>点击嫌疑人即可传唤，消耗调查点数。审问时选择策略：<b>温和试探 / 施压 / 诱供 / 出示证据</b>。</p>
       <p>策略会影响嫌疑人的<b>态度、信任、警惕</b>三项数值——态度过低，对方会闭口、撒谎，甚至翻供。</p>
@@ -1096,7 +1390,17 @@ const FEATS={
 document.querySelectorAll('.ebtn').forEach(b=>{
   b.addEventListener('click',()=>{
     AudioSys.click();
-    const f=FEATS[b.dataset.entry];
+    const key=b.dataset.entry;
+    if(key==='scene'){
+      buildHotspots();
+      renderPoints();
+      goto('scr-scene');
+      if(Object.keys(CASE.searched).length===0){
+        setTimeout(()=>toast('暴雨拍打车窗。7 号包厢的门，虚掩着。',400),600);
+      }
+      return;
+    }
+    const f=FEATS[key];
     document.getElementById('featTitle').textContent=f.title;
     document.getElementById('featSub').textContent=f.sub;
     document.getElementById('featHead').textContent=f.head;
@@ -1104,11 +1408,13 @@ document.querySelectorAll('.ebtn').forEach(b=>{
     goto('scr-feat');
   });
 });
-document.querySelector('[data-act="hubback"]').addEventListener('click',()=>goto('scr-hub'));
+document.querySelectorAll('[data-act="hubback"]').forEach(b=>
+  b.addEventListener('click',()=>goto('scr-hub')));
 
-/* 首次进入案件主界面：新手教程 */
+/* ================== 首次进入 / 教程 ================== */
 function enterHubFirstTime(){
   renderPoints();
+  updateEvBadge();
   document.getElementById('bdg-scene').style.display='inline-block';
   document.getElementById('bdg-interro').style.display='inline-block';
   if(!CASE.tutorialDone){
