@@ -174,3 +174,30 @@ const BODIES = {
     </g>
   </svg>`
 };
+/* ============ v1.2 事件场景 ============ */
+Object.assign(SCENES, {
+  ev_shrine: `<circle class="sc-moon" cx="44" cy="12" r="8"/>
+    <path class="sc-ground" d="M4 35 H56"/>
+    <g class="sc-main"><path d="M18 33 V16 L30 7 L42 16 V33 Z"/><path d="M24 33 V22 H36 V33 Z"/></g>
+    <path class="sc-fx" d="M30 17.5 C28.8 19.5 28.4 20.5 28.4 21.7 C28.4 23.1 29.2 23.9 30 23.9 C30.8 23.9 31.6 23.1 31.6 21.7 C31.6 20.5 31.2 19.5 30 17.5"/>
+    <circle class="sc-spark" cx="30" cy="18" r="1.2"/>`,
+  ev_trader: `<path class="sc-ground" d="M6 35 H54"/>
+    <g class="sc-main"><path d="M26 35 V28 C26 26 34 26 34 28 V35 Z"/><circle cx="30" cy="17" r="8"/><path d="M38 15 L45 17 L38 19 Z"/><path d="M22 16 C16 16 14 20 17 23"/></g>
+    <circle class="sc-spark" cx="27" cy="15" r="1.3"/>
+    <path class="sc-fx" d="M33 25 C33 27.5 31 28.5 30 28.5 C29 28.5 27 27.5 27 25"/>
+    <circle class="sc-spark s2" cx="47" cy="10" r="1.1"/>`,
+  ev_blade: `<path class="sc-ground" d="M6 35 H54"/>
+    <g class="sc-main"><path d="M28 5 L32 5 L31.5 24 L30 28 L28.5 24 Z"/><path d="M27 26 H33 V34 H27 Z"/></g>
+    <path class="sc-fx" d="M29 5 L26 2 M31 5 L34 2"/>
+    <path class="ln" d="M27 29 C29 31 31 31 33 29"/>
+    <circle class="sc-spark" cx="36" cy="12" r="1.2"/><circle class="sc-spark s2" cx="24" cy="14" r="1"/>`,
+  ev_ember: `<path class="sc-ground" d="M6 35 H54"/>
+    <g class="sc-main"><path d="M14 35 L20 27 L26 35 Z"/><path d="M34 35 L40 27 L46 35 Z"/></g>
+    <path class="sc-fx" d="M30 33 C26.5 30 27 26.5 30 23 C33 26.5 33.5 30 30 33 M30 26.5 C28.8 28 28.6 29 28.6 30"/>
+    <circle class="sc-spark" cx="30" cy="20" r="1.4"/><circle class="sc-spark s2" cx="26" cy="24" r="1"/><circle class="sc-spark" cx="34" cy="23" r="1"/>`
+});
+/* ===== v1.3 精英立绘 ===== */
+Object.assign(BODIES, {
+overlord: `<svg class="body-svg" viewBox="0 0 160 140"> <ellipse class="b-shadow" cx="80" cy="132" rx="52" ry="6"/> <g class="b-main"> <path d="M66 38 L58 16 L74 30 Z"/> <path d="M94 38 L102 16 L86 30 Z"/> <path d="M54 122 L46 72 C44 50 58 36 80 36 C102 36 116 50 114 72 L106 122 Z"/> <path d="M32 62 L54 46 L62 66 L44 80 Z"/> <path d="M128 62 L106 46 L98 66 L116 80 Z"/> <path d="M44 80 L30 112 L44 117 L56 92 Z"/> <path d="M116 80 L130 112 L116 117 L104 92 Z"/> <path d="M134 22 L142 20 L139 112 L133 112 Z"/> <path d="M128 34 L148 32 L148 40 L128 42 Z"/> </g> <g class="b-vein"><path d="M70 58 L78 82 L66 102 M92 56 L86 82 L98 102"/></g> <g class="b-glow"><circle cx="73" cy="46" r="2.4"/><circle cx="87" cy="46" r="2.4"/></g> </svg>`,
+spider: `<svg class="body-svg" viewBox="0 0 160 120"> <ellipse class="b-shadow" cx="80" cy="110" rx="54" ry="6"/> <g class="b-main"> <path d="M60 62 L34 34 L14 44" style="fill:none;stroke:#171009;stroke-width:7"/> <path d="M58 72 L26 62 L12 82" style="fill:none;stroke:#171009;stroke-width:7"/> <path d="M100 62 L126 34 L146 44" style="fill:none;stroke:#171009;stroke-width:7"/> <path d="M102 72 L134 62 L148 82" style="fill:none;stroke:#171009;stroke-width:7"/> <path d="M62 94 L42 104" style="fill:none;stroke:#171009;stroke-width:6"/> <path d="M98 94 L118 104" style="fill:none;stroke:#171009;stroke-width:6"/> <ellipse cx="80" cy="72" rx="34" ry="26"/> <circle cx="80" cy="40" r="14"/> <path d="M72 30 L60 20" style="fill:none;stroke:#171009;stroke-width:4"/> <path d="M88 30 L100 20" style="fill:none;stroke:#171009;stroke-width:4"/> </g> <g class="b-glow"><circle cx="74" cy="38" r="2.2"/><circle cx="86" cy="38" r="2.2"/><ellipse class="b-core" cx="80" cy="76" rx="9" ry="13"/></g> </svg>`,
+magma: `<svg class="body-svg" viewBox="0 0 160 120"> <ellipse class="b-shadow" cx="80" cy="110" rx="54" ry="6"/> <g class="b-main"> <path d="M56 50 L64 34 L72 48 M78 46 L86 30 L94 46 M98 50 L106 36 L112 52"/> <path d="M40 96 C34 66 52 44 80 44 C110 44 128 66 122 96 Z"/> <path d="M116 64 C126 54 142 56 140 68 C138 78 124 80 114 74 Z"/> <path d="M50 96 L44 110 L60 110 Z"/> <path d="M72 96 L68 110 L84 110 Z"/> <path d="M94 96 L92 110 L108 110 Z"/> <path d="M112 94 L110 110 L126 110 Z"/> </g> <g class="b-vein"><path d="M60 70 L74 84 L62 94 M100 66 L92 84 L104 92"/></g> <g class="b-glow"><circle class="b-core" cx="80" cy="74" r="9"/><circle cx="132" cy="62" r="2.2"/></g> </svg>` });
