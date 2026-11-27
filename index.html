@@ -6,30 +6,26 @@
 <title>烬途 · Ember Path</title>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/main.css">
-<link rel="stylesheet" href="css/screens.css">
-<link rel="stylesheet" href="css/battle.css">
+<link rel="stylesheet" href="css/main.css?v=1.5">
+<link rel="stylesheet" href="css/screens.css?v=1.5">
+<link rel="stylesheet" href="css/battle.css?v=1.5">
 </head>
 <body>
 <canvas id="fx"></canvas>
-
-<!-- 竖屏提示 -->
 <div id="portrait-lock">
   <div class="pl-phone"><i></i></div>
   <p>请横置设备，继续旅途</p>
 </div>
-
 <!-- 加载 -->
 <section id="screen-loading" class="screen active">
   <div class="load-wrap">
     <div class="load-mark"></div>
-    <h1 class="load-title">烬　途</h1>
+    <h1 class="load-title">烬 途</h1>
     <div class="load-sub">E M B E R&nbsp;&nbsp;P A T H</div>
     <div class="load-bar" id="loadBar"><i></i></div>
     <div class="load-tip" id="loadTip">点燃第一簇火…</div>
   </div>
 </section>
-
 <!-- 主菜单 -->
 <section id="screen-menu" class="screen">
   <div class="menu-hills">
@@ -45,16 +41,17 @@
     <div class="menu-sub">E M B E R&nbsp;&nbsp;P A T H</div>
     <div class="menu-tag">死地求生 · 向烬而行</div>
     <div class="menu-btns">
-      <button class="btn primary big" id="btnStart">启　程</button>
+      <button class="btn primary big" id="btnStart">启 程</button>
+      <button class="btn primary big hidden" id="btnCont">继续旅途</button>
       <div class="row">
-        <button class="btn ghost" id="btnCodex">图　鉴</button>
-        <button class="btn ghost" id="btnSetting">设　置</button>
+        <button class="btn ghost" id="btnSaves">存档馆</button>
+        <button class="btn ghost" id="btnSetting">设 置</button>
+        <button class="btn ghost" id="btnCodex">图 鉴</button>
       </div>
     </div>
-    <div class="menu-ver">v1.1 · 原型</div>
+    <div class="menu-ver">v1.5 · 原型</div>
   </div>
 </section>
-
 <!-- 地图 -->
 <section id="screen-map" class="screen">
   <header class="map-head">
@@ -63,19 +60,17 @@
     <div class="mh-r">
       <span class="mh-stat"><i data-ic="heart"></i><b id="mhHp">0</b></span>
       <span class="mh-stat"><i data-ic="coin"></i><b id="mhGold">0</b></span>
-      <button class="icon-btn snd-btn" title="声音"><i data-ic="speaker"></i></button>
-      <button class="icon-btn" id="mapBook"><i data-ic="book"></i></button>
-      <button class="icon-btn" id="mapGear"><i data-ic="gear"></i></button>
+      <button class="icon-btn" id="mapSave" title="存档馆"><i data-ic="save"></i></button>
+      <button class="icon-btn" id="mapBook" title="牌组"><i data-ic="book"></i></button>
+      <button class="icon-btn" id="mapGear" title="设置"><i data-ic="gear"></i></button>
     </div>
   </header>
   <div class="map-body"><svg id="mapSvg" viewBox="0 0 1000 560" preserveAspectRatio="xMidYMid meet"></svg></div>
 </section>
-
 <!-- 战斗 -->
 <section id="screen-battle" class="screen">
   <div class="battle-top">
     <div class="bt-floor" id="btFloor">烬径</div>
-    <button class="icon-btn snd-btn" title="声音"><i data-ic="speaker"></i></button>
     <button class="icon-btn" id="battleGear"><i data-ic="gear"></i></button>
   </div>
   <div class="battle-field" id="battleField">
@@ -92,26 +87,27 @@
     <button class="btn endturn" id="endTurnBtn"><i data-ic="chevrons"></i><span>结束回合</span></button>
   </div>
 </section>
-
-<!-- 奖励 / 篝火 / 选卡 / 结算 -->
+<!-- 事件 / 奖励 / 篝火 / 选卡 / 存档馆 / 结算 -->
+<section id="screen-event" class="screen"></section>
 <section id="screen-reward" class="screen"></section>
 <section id="screen-camp" class="screen"></section>
 <section id="screen-select" class="screen"></section>
+<section id="screen-saves" class="screen"></section>
 <section id="screen-over" class="screen"></section>
-
 <div id="vault" class="modal"></div>
 <div id="pause" class="modal"></div>
 <div id="toast"></div>
 <div id="banner"><i class="b-line"></i><span class="b-txt"></span></div>
 <div id="wipe"><i class="w-l"></i><i class="w-r"></i><i class="w-line"></i></div>
-
-<script src="js/icon.js"></script>
-<script src="js/data.js"></script>
-<script src="js/ui.js"></script>
-<script src="js/audio.js"></script>
-<script src="js/map.js"></script>
-<script src="js/battle.js"></script>
-<script src="js/screens.js"></script>
-<script src="js/game.js"></script>
+<script src="js/icon.js?v=1.5"></script>
+<script src="js/data.js?v=1.5"></script>
+<script src="js/ui.js?v=1.5"></script>
+<script src="js/audio.js?v=1.5"></script>
+<script src="js/save.js?v=1.5"></script>
+<script src="js/map.js?v=1.5"></script>
+<script src="js/battle.js?v=1.5"></script>
+<script src="js/screens.js?v=1.5"></script>
+<script src="js/story.js?v=1.5"></script>
+<script src="js/game.js?v=1.5"></script>
 </body>
 </html>
