@@ -18,7 +18,7 @@ function intentHTML(m){
     if(m.block) ic += `<span class="it-b">${Icon.get('shield')}<b>${m.block}</b></span>`;
   }
   else if(m.t === 'block') ic = `<span class="it-b">${Icon.get('shield')}<b>${m.n}</b></span>`;
-  else if(m.t === 'charge') ic = `<span class="it-c">${Icon.get('hourglass')}</span>`;
+  else if(m.t === 'charge') ic = `<span class="it-c">${Icon.get('hourglass')}</span>`; else if(m.t === 'vuln') ic = `<span class="it-d">${Icon.get('target')}<b>${m.n}</b></span>`;
   else if(m.t === 'weak') ic = `<span class="it-d">${Icon.get('down')}<b>${m.n}</b></span>`;
   return `<div class="it-ic">${ic}</div><div class="it-name">${m.name}</div>`;
 }
@@ -45,20 +45,20 @@ const Battle = {
 
   async start(kind){
     const st = Game.state;
-    const def = kind === 'boss' ? ENEMIES.boss : pick([ENEMIES.crow, ENEMIES.golem, ENEMIES.shade]);
+    const def = kind === 'boss' ? ENEMIES.boss : kind === 'elite' ? pick([ENEMIES.overlord, ENEMIES.spider, ENEMIES.magma]) : pick([ENEMIES.crow, ENEMIES.golem, ENEMIES.shade]); this.kind = kind;
     this.g = {
       kind, floor: MapSys.floor(), def,
       enemy: { def, hp:def.hp, maxHp:def.hp, block:0, vuln:0, weak:0, turn:0, pending:def.move(0) },
       hp: st.hp, maxHp: st.maxHp,
-      energy:3, maxE:3, block:0, vuln:0, weak:0, tmpStr:0,
+      energy:3, maxE:3 + ((st.relics||[]).includes('core') ? 1 : 0), block:0, vuln:0, weak:0, tmpStr:0,
       hand:[], discard:[], draw: shuffle(st.deck.map(c => ({...c}))),
       turn:0, busy:true, sel:null, stats:{ dmg:0 }
     };
-    this._pA = this._pE = undefined;
+    this._pA = this._pE = undefined; this._ashenUsed = false;
     this.renderStatic();
     UI.show('screen-battle');
     await sleep(850);
-    UI.banner(kind === 'boss' ? '守烬者 拦于途尽' : '遭遇 · ' + def.name);
+    UI.banner(kind === 'boss' ? '守烬者 拦于途尽' : kind === 'elite' ? '精英强敌 · ' + def.name : '遭遇 · ' + def.name);
     await sleep(1150);
     this.startPlayerTurn();
   },
@@ -71,7 +71,7 @@ const Battle = {
     au.innerHTML = this.npHTML('执烬者', false) + `<div class="bwrap">${BODIES.hero}</div>`;
     eu.innerHTML = this.npHTML(g.enemy.def.name, true) +
       `<div class="bwrap">${BODIES[g.enemy.def.body]}</div>`;
-    if(g.enemy.def.boss) eu.querySelector('.bwrap').style.width = 'clamp(180px,42vh,380px)';
+    if(g.enemy.def.boss) eu.querySelector('.bwrap').style.width = 'clamp(180px,42vh,380px)'; else if(g.enemy.def.elite) eu.querySelector('.bwrap').style.width = 'clamp(150px,36vh,330px)';
     $('#hand').innerHTML = '';
     $('#battleField').classList.remove('tg-e','tg-a');
     $('#targetTip').classList.remove('show');
@@ -199,35 +199,7 @@ const Battle = {
   },
 
   /* ---- 卡牌效果上下文 ---- */
-  async damage(n, hits=1){
-    const g = this.g;
-    for(let k=0; k<hits; k++){
-      if(g.enemy.hp <= 0) break;
-      const d = calcDmg(n + g.tmpStr, g.weak > 0, g.enemy.vuln > 0);
-      const ab = Math.min(g.enemy.block, d);
-      g.enemy.block -= ab;
-      const real = d - ab;
-      g.enemy.hp = Math.max(0, g.enemy.hp - real);
-      g.stats.dmg += real;
-      const p = unitCenter('#enemyUnit');
-      UI.slash(p.x, p.y, real >= 10);
-      S('slash');
-      UI.float(p.x, p.y - 26, '-' + d, ab >= d ? 'f-block' : (real >= 10 ? 'f-dmg f-big' : 'f-dmg'));
-      if(real > 0){
-        S('hit');
-        const eu = $('#enemyUnit');
-        eu.classList.remove('hit'); void eu.offsetWidth; eu.classList.add('hit');
-        UI.shake($('#battleField'));
-      } else {
-        S('block');
-        const eu = $('#enemyUnit');
-        eu.classList.remove('blk-hit'); void eu.offsetWidth; eu.classList.add('blk-hit');
-      }
-      FX.burst(p.x, p.y, 6);
-      this.updateAll();
-      await sleep(k < hits-1 ? 180 : 130);
-    }
-  },
+  async damage(n, hits=1){ const g = this.g; for(let k=0; k<hits; k++){ if(g.enemy.hp <= 0) break; const d = calcDmg(n + g.tmpStr, g.weak > 0, g.enemy.vuln > 0); const ab = Math.min(g.enemy.block, d); g.enemy.block -= ab; const real = d - ab; g.enemy.hp = Math.max(0, g.enemy.hp - real); g.stats.dmg += real; const p = unitCenter('#enemyUnit'); UI.slash(p.x, p.y, real >= 10); S('slash'); UI.float(p.x, p.y - 26, '-' + d, ab >= d ? 'f-block' : (real >= 10 ? 'f-dmg f-big' : 'f-dmg')); if(real > 0){ S('hit'); const eu = $('#enemyUnit'); eu.classList.remove('hit'); void eu.offsetWidth; eu.classList.add('hit'); UI.shake($('#battleField')); } else { S('block'); const eu = $('#enemyUnit'); eu.classList.remove('blk-hit'); void eu.offsetWidth; eu.classList.add('blk-hit'); } FX.burst(p.x, p.y, 6); this.updateAll(); await sleep(k < hits-1 ? 180 : 130); } },
   async block(n){
     const g = this.g;
     g.block += n;
@@ -274,10 +246,7 @@ const Battle = {
       await sleep(95);
     }
   },
-  async loseHp(n){
-    const g = this.g;
-    g.hp = Math.max(1, g.hp - n);
-    S('hurt');
+  async loseHp(n){ const g = this.g; const pre = g.hp; g.hp = Math.max(1, g.hp - n); if(pre - n <= 0 && !this._ashenUsed && (Game.state.relics||[]).includes('ashen')){ this._ashenUsed = true; g.hp = 1; S('buff'); UI.toast('不灭余烬 · 火未熄灭'); } S('hurt');
     const p = unitCenter('#allyUnit');
     UI.float(p.x, p.y - 20, '-' + n, 'f-hurt');
     const au = $('#allyUnit');
@@ -287,11 +256,7 @@ const Battle = {
   },
 
   /* ---- 回合流程 ---- */
-  async startPlayerTurn(){
-    const g = this.g;
-    g.block = 0;
-    g.energy = g.maxE;
-    this.updateAll();
+async startPlayerTurn(){ const g = this.g; const rel = Game.state.relics || []; g.block = (rel.includes('wisp') ? 2 : 0) + (g.turn === 0 && rel.includes('aegis') ? 8 : 0); if(g.block > 0){ S('block'); const p = unitCenter('#allyUnit'); UI.float(p.x, p.y - 20, '+' + g.block, 'f-block'); } g.energy = g.maxE; this.updateAll();
     if(g.turn > 0) await UI.banner('你的回合');
     g.turn++;
     $('#endTurnBtn').classList.remove('dim');
@@ -313,8 +278,8 @@ const Battle = {
     await sleep(280);
     await UI.banner('敌方回合');
     const e = g.enemy, m = e.pending;
-    e.block = 0;
-    if(m.t === 'attack') await this.enemyAttack(m);
+    e.block = 0; 
+    if(e.def.guard){ e.block += e.def.guard; S('block'); const pg = unitCenter('#enemyUnit'); UI.float(pg.x, pg.y - 16, '+' + e.def.guard, 'f-block'); } if(m.t === 'attack') await this.enemyAttack(m);
     else if(m.t === 'block'){
       e.block += m.n;
       S('block');
@@ -328,6 +293,8 @@ const Battle = {
       S('debuff');
       const p = unitCenter('#allyUnit');
       UI.float(p.x, p.y, '虚弱 +' + m.n, 'f-debuff');
+    }
+      else if(m.t === 'vuln'){ g.weak += m.n; S('debuff'); const p = unitCenter('#allyUnit'); UI.float(p.x, p.y, '易伤 +' + m.n, 'f-debuff');
     }
     else if(m.t === 'charge'){
       S('charge');
@@ -346,37 +313,7 @@ const Battle = {
     this.updateAll();
     await this.startPlayerTurn();
   },
-
-  async enemyAttack(m){
-    const e = this.g.enemy;
-    const bw = $('#enemyUnit .bwrap');
-    bw.classList.add('lunge');
-    await sleep(250);
-    for(let k=0; k<(m.hits||1); k++){
-      const d = calcDmg(m.dmg, e.weak > 0, this.g.vuln > 0);
-      const ab = Math.min(this.g.block, d);
-      this.g.block -= ab;
-      const real = d - ab;
-      this.g.hp = Math.max(0, this.g.hp - real);
-      const p = unitCenter('#allyUnit');
-      UI.slash(p.x, p.y, real >= 10);
-      S('slash');
-      UI.float(p.x, p.y - 26, '-' + d, ab >= d ? 'f-block' : 'f-hurt');
-      if(real > 0){
-        S('hit');
-        const au = $('#allyUnit');
-        au.classList.remove('hit'); void au.offsetWidth; au.classList.add('hit');
-        UI.shake($('#battleField'));
-        FX.burst(p.x, p.y, 5);
-      } else {
-        S('block');
-      }
-      this.updateAll();
-      await sleep(210);
-    }
-    bw.classList.remove('lunge');
-  },
-
+async enemyAttack(m){ const e = this.g.enemy; const bw = $('#enemyUnit .bwrap'); bw.classList.add('lunge'); await sleep(250); for(let k=0; k<(m.hits||1); k++){ const d = calcDmg(m.dmg, e.weak > 0, this.g.vuln > 0); const ab = Math.min(this.g.block, d); this.g.block -= ab; const real = d - ab; this.g.hp = Math.max(0, this.g.hp - real); const p = unitCenter('#allyUnit'); if(this.g.hp <= 0 && !this._ashenUsed && (Game.state.relics||[]).includes('ashen')){ this._ashenUsed = true; this.g.hp = 1; S('buff'); UI.float(p.x, p.y - 34, '不灭余烬', 'f-block'); UI.banner('不灭余烬 · 火未熄灭'); } UI.slash(p.x, p.y, real >= 10); S('slash'); UI.float(p.x, p.y - 26, '-' + d, ab >= d ? 'f-block' : 'f-hurt'); if(real > 0){ S('hit'); const au = $('#allyUnit'); au.classList.remove('hit'); void au.offsetWidth; au.classList.add('hit'); UI.shake($('#battleField')); FX.burst(p.x, p.y, 5); } else { S('block'); } this.updateAll(); await sleep(210); } bw.classList.remove('lunge'); },
   async winSequence(){
     const g = this.g;
     g.busy = true;
@@ -386,15 +323,11 @@ const Battle = {
     FX.burst(p.x, p.y, g.enemy.def.boss ? 80 : 36);
     UI.shake($('#battleField'));
     await sleep(1150);
-    const st = Game.state;
-    st.hp = g.hp; st.kills++; st.dmgTotal += g.stats.dmg;
+    const st = Game.state; if((st.relics||[]).includes('fang')){ const h = Math.min(st.maxHp - g.hp, 4); if(h > 0){ g.hp += h; S('heal'); UI.toast('蚀骨之牙 · 回复 ' + h + ' 点生命'); } } st.hp = g.hp; st.kills++; st.dmgTotal += g.stats.dmg; if(window.CXNOTE) CXNOTE(st, g.enemy.def.key);
     const boss = g.kind === 'boss';
     await UI.wipe(()=> boss ? Screens.over(true) : Screens.reward());
   },
-
-  async loseSequence(){
-    const g = this.g;
-    g.busy = true;
+  async loseSequence(){ const g = this.g; g.busy = true; if(window.CXNOTE) CXNOTE(Game.state);
     $('#allyUnit').classList.add('die');
     S('die');
     await UI.banner('你倒下了…');
