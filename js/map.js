@@ -6,7 +6,7 @@ const MapSys = {
     this.nodes = []; this.edges = [];
     const layout = [1,2,3,2,3,2,1];
     const types  = [['fight'],['fight','fight'],['fight','camp','fight'],
-                    ['fight','event','fight'],['camp','fight','fight'],['fight','fight'],['boss']];
+                    ['fight','event','fight'],['camp','elite','fight'],['fight','elite'],['boss']];
     let uid = 0;
     layout.forEach((n, c) => {
       const colNodes = [];
@@ -91,20 +91,24 @@ const MapSys = {
       this.flashAvail();
       return;
     }
-    if(n.type === 'event'){ UI.toast('迷雾未散 —— 此地尚未开辟（v1.2 开启）'); return }
-    if(n.type === 'elite'){ UI.toast('深处尚无强敌驻守（v1.2 开启）'); return }
     this.pending = id;
-    if(window.AudioSys) AudioSys.sfx('click');
+    S('click');
+    if(n.type === 'event'){
+      await UI.wipe(()=> Story.start(pick(Object.keys(EVENTS))));
+      return;
+    }
     await UI.wipe(()=>{
-      if(n.type === 'fight' || n.type === 'boss') Battle.start(n.type);
+      if(n.type === 'fight' || n.type === 'elite' || n.type === 'boss') Battle.start(n.type);
       else if(n.type === 'camp') Screens.camp();
     });
   },
 
+  /* 所有节点（战斗/篝火/事件）回地图的唯一出口 —— 自动存档挂在这里 */
   async finish(){
     this.done.add(this.pos);
     this.pos = this.pending; this.done.add(this.pos);
     this.pending = null;
     await UI.wipe(()=>{ UI.show('screen-map'); this.render(); });
+    SaveSys.auto();
   }
 };
