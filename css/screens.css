@@ -53,7 +53,14 @@
 .rn-card:hover,.sel-card:hover{transform:translateY(-1.2vh);box-shadow:0 14px 34px rgba(0,0,0,.6),0 0 18px rgba(255,122,47,.12)}
 .rn-card.pop{animation:cardPop .5s cubic-bezier(.2,1.3,.4,1) backwards}
 @keyframes cardPop{from{opacity:0;transform:translateY(4vh) scale(.85)}}
-
+/* ===== v1.3 遗物样式 ===== */
+.rn-relic{display:flex;align-items:center;gap:12px;margin:10px auto 2px;padding:10px 14px;max-width:340px;border:1px solid rgba(255,190,90,.4);border-radius:12px;background:rgba(255,190,90,.08)}
+.rn-relic svg{width:30px;height:30px;flex:0 0 auto}
+.rn-relic .rr-txt{flex:1;text-align:left}
+.rn-relic .rr-txt b{display:block;font-size:14px;color:#ffd489}
+.rn-relic .rr-txt span{font-size:11px;opacity:.75}
+.rr-list{display:flex;flex-direction:column;gap:10px;max-height:46vh;overflow-y:auto;margin:8px 0}
+.relic-bag{position:fixed;inset:0;z-index:90;display:flex;align-items:center;justify-content:center;background:rgba(8,6,4,.72)}
 /* ============ 篝火 ============ */
 .camp-opts{display:flex;gap:3vw;margin-top:2vh}
 .camp-opt{width:clamp(150px,30vh,240px);padding:3.4vh 2vh;border:1px solid var(--line2);border-radius:6px;background:rgba(24,17,11,.6);cursor:pointer;transition:transform .25s,border-color .25s,box-shadow .25s;animation:cardPop .5s cubic-bezier(.2,1.2,.4,1) backwards}
@@ -92,3 +99,62 @@
 .mnode.flash .mn-ic{animation:hintIc .8s ease}
 @keyframes hintRing{30%{stroke:var(--ember2);fill:#31200a}}
 @keyframes hintIc{30%{color:var(--ember2)}}
+/* ===== v1.4 结算页比例压缩 ===== */
+.ov-mark svg{width:clamp(56px,10vh,88px);height:clamp(56px,10vh,88px)}
+.ov-title{font-size:clamp(22px,4.4vh,36px)}
+.ov-sub{font-size:clamp(11px,1.7vh,14px)}
+.ov-stats{margin:1.4vh 0 .4vh}
+.ov-stat{gap:.2vh}
+.ov-stat b{font-size:clamp(15px,3vh,23px)}
+.ov-stat span{font-size:clamp(9px,1.4vh,11px)}
+.ov-relic{padding:6px 10px;margin:4px auto 0;max-width:300px}
+.ov-relic svg{width:22px;height:22px}
+.ov-relic .rr-txt b{font-size:12px}
+.ov-relic .rr-txt span{font-size:10px}
+.scr-narrow{justify-content:safe center;overflow-y:auto}
+/* ===== v1.4 锻造确认预览 ===== */
+.forge-box{min-width:min(84vw,470px)}
+.forge-cmp{display:flex;align-items:center;justify-content:center;gap:2.6vw;margin:1.8vh 0 2.2vh}
+.forge-side{display:flex;flex-direction:column;align-items:center;gap:1vh}
+.forge-lab{font-size:clamp(11px,1.8vh,14px);letter-spacing:.3em;color:var(--faint)}
+.forge-side .card{--cw:clamp(84px,14.5vh,118px)}
+.forge-arrow{font-size:clamp(20px,3.6vh,30px);color:var(--ember2);text-shadow:0 0 12px rgba(255,122,47,.5)}
+/* ===== v1.5 图鉴 ===== */
+.cx-wrap{position:fixed;inset:0;z-index:900;background:rgba(10,7,4,.92);display:flex;align-items:center;justify-content:center;padding:2vh 3vw;overflow-y:auto}
+.cx-box{width:min(94vw,760px);max-height:92vh;display:flex;flex-direction:column;background:#16110c;border:1px solid rgba(255,180,110,.16);border-radius:14px;padding:2vh 3vw;box-shadow:0 12px 60px rgba(0,0,0,.6)}
+.cx-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.4vh}
+.cx-title{font-size:clamp(18px,3vh,26px);letter-spacing:.45em;color:#f2e6d0}
+.cx-tabs{display:flex;gap:8px;margin-bottom:1.6vh}
+.cx-tab.on{border-color:var(--ember2,#ff7a2f);color:var(--ember2,#ff7a2f)}
+.cx-body{overflow-y:auto;min-height:0;flex:1;padding-right:4px}
+.cx-hint{font-size:clamp(10px,1.6vh,13px);color:var(--faint,#9a8f80);letter-spacing:.14em;margin-bottom:1.4vh}
+.cx-grid{display:grid;gap:1.8vh 2.2vw}
+.cx-cards{grid-template-columns:repeat(auto-fill,minmax(118px,1fr));justify-items:center}
+.cx-card{display:flex;flex-direction:column;align-items:center;gap:.8vh;cursor:pointer}
+.cx-card .card{--cw:clamp(86px,13.5vh,112px)}
+.cx-cap{font-size:clamp(9px,1.5vh,12px);letter-spacing:.12em;color:var(--ember2,#ff7a2f)}
+.cx-cap.dim{color:var(--faint,#9a8f80)}
+.cx-relics{grid-template-columns:repeat(auto-fill,minmax(190px,1fr))}
+.cx-relic{display:flex;flex-direction:column;align-items:center;text-align:center;gap:.7vh;padding:1.8vh 1.2vw;border:1px solid rgba(255,255,255,.1);border-radius:10px;background:rgba(255,255,255,.03)}
+.cx-relic b{font-size:clamp(12px,1.9vh,15px);color:#f2e6d0;letter-spacing:.1em}
+.cx-relic span{font-size:clamp(10px,1.6vh,12px);color:var(--faint,#9a8f80);line-height:1.55}
+.cx-r-ic svg{width:26px;height:26px}
+.cx-relic.cx-locked{opacity:.4;filter:grayscale(1)}
+.cx-foes{grid-template-columns:1fr}
+.cx-foe{display:flex;align-items:center;gap:2.6vw;padding:1.5vh 1.5vw;border:1px solid rgba(255,255,255,.08);border-radius:10px;background:rgba(255,255,255,.02)}
+.cx-f-body{flex:0 0 auto;width:clamp(76px,15vh,120px)}
+.cx-f-body .bwrap{width:100%}
+.cx-f-body svg{width:100%;height:auto;display:block}
+.cx-f-info{flex:1;min-width:0}
+.cx-f-name{display:flex;align-items:center;gap:8px;font-size:clamp(14px,2.2vh,18px);color:#f2e6d0;letter-spacing:.1em}
+.cx-tag{font-style:normal;font-size:clamp(9px,1.4vh,11px);padding:2px 9px;border-radius:99px;border:1px solid;letter-spacing:.2em}
+.tg-norm{color:#b9ad9d;border-color:#b9ad9d}
+.tg-elite{color:#e0b64f;border-color:#e0b64f}
+.tg-boss{color:#e2543e;border-color:#e2543e}
+.cx-f-hp{font-size:clamp(11px,1.7vh,13px);color:var(--faint,#9a8f80);margin:.6vh 0}
+.cx-f-desc{font-size:clamp(11px,1.7vh,13px);color:#cfc3b0;line-height:1.65}
+/* ===== v1.5.1 图鉴解锁 ===== */
+.cx-q{font-size:clamp(28px,5vh,40px);font-weight:700;color:var(--faint,#9a8f80);line-height:1.1}
+.cx-unk{font-size:clamp(10px,1.6vh,12px);color:var(--faint,#9a8f80);letter-spacing:.14em}
+.cx-slot-q{width:clamp(86px,13.5vh,112px);height:clamp(122px,19vh,159px);display:flex;align-items:center;justify-content:center;font-size:clamp(30px,5.5vh,42px);font-weight:700;color:var(--faint,#9a8f80);border:1px dashed rgba(255,255,255,.18);border-radius:10px;background:rgba(255,255,255,.02)}
+.cx-f-q{display:flex;align-items:center;justify-content:center;font-size:clamp(30px,6vh,46px);font-weight:700;color:var(--faint,#9a8f80);border:1px dashed rgba(255,255,255,.15);border-radius:10px}
