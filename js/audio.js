@@ -1,10 +1,11 @@
 /* ============ 音频系统（WebAudio 全程序化合成，零外部素材） ============ */
-/* 首次用户手势后激活；音效未启动时静默跳过；静音开关实时生效 */
+/* 音乐/音效双通道：独立开关 + 独立音量滑块，设置持久化到 localStorage */
 const AudioSys = {
   ctx:null, master:null, music:null, sfxBus:null, delay:null, fb:null, wet:null, noiseBuf:null,
-  started:false, muted:false, mood:null,
-  _drone:[], _timers:[],
-  SCALE:[220, 261.6, 293.7, 329.6, 392, 440, 523.3, 587.3],   // A 小调五声（扩展八度）
+  started:false, mood:null,
+  musicOn:true, sfxOn:true, musicVol:.8, sfxVol:.9,
+  _drone:[], _timers:[], PREF:'emberpath_audio',
+  SCALE:[220, 261.6, 293.7, 329.6, 392, 440, 523.3, 587.3],
 
   start(){
     if(this.started) return;
@@ -14,35 +15,51 @@ const AudioSys = {
     this.ctx = new AC();
     if(this.ctx.state === 'suspended') this.ctx.resume();
     this.master = this.ctx.createGain();
-    this.master.gain.value = this.muted ? 0 : .75;
+    this.master.gain.value = 1;
     this.master.connect(this.ctx.destination);
-    // 延迟反馈做空间感
     this.delay = this.ctx.createDelay(1); this.delay.delayTime.value = .36;
     this.fb = this.ctx.createGain(); this.fb.gain.value = .34;
     this.delay.connect(this.fb); this.fb.connect(this.delay);
     this.wet = this.ctx.createGain(); this.wet.gain.value = .3;
     this.delay.connect(this.wet); this.wet.connect(this.master);
-    this.music = this.ctx.createGain(); this.music.gain.value = .42;
+    this.music = this.ctx.createGain(); this.music.gain.value = 0;
     this.music.connect(this.master); this.music.connect(this.delay);
-    // 注意：总线命名为 sfxBus，避免与 sfx() 方法同名冲突
-    this.sfxBus = this.ctx.createGain(); this.sfxBus.gain.value = .8;
+    this.sfxBus = this.ctx.createGain(); this.sfxBus.gain.value = 0;
     this.sfxBus.connect(this.master);
-    // 白噪声 buffer（打击/摩擦类音源）
     const len = Math.floor(this.ctx.sampleRate * 1.2);
     this.noiseBuf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
     const d = this.noiseBuf.getChannelData(0);
     for(let i=0;i<len;i++) d[i] = Math.random()*2-1;
+    this.loadPrefs(); this.applyVolumes();
     this.setMood((typeof UI!=='undefined' && UI.lastScreen) || 'menu');
   },
 
-  toggleMute(){
-    this.muted = !this.muted;
-    if(this.master) this.master.gain.value = this.muted ? 0 : .75;
-    return this.muted;
+  /* ---- 双通道音量控制 ---- */
+  applyVolumes(){
+    if(!this.ctx) return;
+    this.music.gain.value = this.musicOn ? this.musicVol * .8 : 0;
+    this.sfxBus.gain.value = this.sfxOn ? this.sfxVol : 0;
+  },
+  setMusicOn(b){ this.musicOn = b; this.applyVolumes(); this.savePrefs() },
+  setSfxOn(b){ this.sfxOn = b; this.applyVolumes(); this.savePrefs() },
+  setMusicVol(v){ this.musicVol = v; this.applyVolumes(); this.savePrefs() },
+  setSfxVol(v){ this.sfxVol = v; this.applyVolumes(); this.savePrefs() },
+  loadPrefs(){
+    try{
+      const p = JSON.parse(localStorage.getItem(this.PREF) || '{}');
+      if(p.musicOn != null) this.musicOn = p.musicOn;
+      if(p.sfxOn   != null) this.sfxOn   = p.sfxOn;
+      if(p.musicVol != null) this.musicVol = p.musicVol;
+      if(p.sfxVol   != null) this.sfxVol   = p.sfxVol;
+    }catch(e){}
+  },
+  savePrefs(){
+    try{ localStorage.setItem(this.PREF, JSON.stringify(
+      { musicOn:this.musicOn, sfxOn:this.sfxOn, musicVol:this.musicVol, sfxVol:this.sfxVol })) }catch(e){}
   },
 
   tone({f=440, f2=null, type='sine', t=.2, v=.2, when=0, attack=.005, dest=null}){
-    if(!this.ctx || this.muted) return;
+    if(!this.ctx || !this.sfxOn) return;
     const now = this.ctx.currentTime + when;
     const o = this.ctx.createOscillator(), g = this.ctx.createGain();
     o.type = type; o.frequency.setValueAtTime(f, now);
@@ -55,7 +72,7 @@ const AudioSys = {
   },
 
   noise({t=.15, v=.2, fc=1000, fc2=null, when=0, dest=null}){
-    if(!this.ctx || this.muted) return;
+    if(!this.ctx || !this.sfxOn) return;
     const now = this.ctx.currentTime + when;
     const s = this.ctx.createBufferSource(); s.buffer = this.noiseBuf;
     const f = this.ctx.createBiquadFilter(); f.type = 'lowpass';
@@ -89,30 +106,33 @@ const AudioSys = {
       case 'die':      this.tone({f:220, f2:36, type:'sawtooth', t:.55, v:.22}); this.noise({t:.5, v:.14, fc:1200, fc2:150}); break;
       case 'fire':     this.noise({t:1.1, v:.1, fc:700, fc2:250}); break;
       case 'whoosh':   this.noise({t:.35, v:.16, fc:500, fc2:3000}); break;
+      /* v1.2 对话音效 */
+      case 'type':     this.tone({f:1150, f2:880, type:'square', t:.03, v:.05}); break;
+      case 'page':     this.noise({t:.13, v:.09, fc:2200, fc2:700}); break;
       case 'win':      [523, 659, 784, 1047].forEach((f,i)=> this.tone({f, type:'triangle', t:.32, v:.16, when:i*.13})); break;
       case 'lose':     [392, 330, 262, 196].forEach((f,i)=> this.tone({f, type:'sine', t:.4, v:.16, when:i*.24})); break;
     }
   },
 
-  /* ---- 场景氛围乐：低音持续层 + 五声音阶随机琶音（战斗另加心跳脉冲） ---- */
+  /* ---- 场景氛围乐 ---- */
   setMood(id){
     if(!this.started) return;
     const M = { 'screen-loading':'menu', 'screen-menu':'menu', 'screen-map':'map',
-                'screen-battle':'battle', 'screen-camp':'camp',
-                'screen-reward':'map', 'screen-select':'map', 'screen-over':'menu' };
+                'screen-battle':'battle', 'screen-camp':'camp', 'screen-event':'map',
+                'screen-reward':'map', 'screen-select':'map', 'screen-saves':'menu', 'screen-over':'menu' };
     const mood = M[id] || 'map';
     if(mood === this.mood) return;
     this.mood = mood;
     this._stopMusic();
     this._droneBase(mood === 'battle' ? 98 : 110);
     const cfg = {
-      menu:  { every:2600, chance:.75, full:true,  vol:.07,  heart:0    },
-      map:   { every:2100, chance:.7,  full:true,  vol:.075, heart:0    },
-      battle:{ every:2600, chance:.5,  full:false, vol:.06,  heart:1200 },
-      camp:  { every:1500, chance:.8,  full:true,  vol:.08,  heart:0    }
+      menu:  { every:2600, chance:.75, full:true,  vol:.095, heart:0    },
+      map:   { every:2100, chance:.7,  full:true,  vol:.1,   heart:0    },
+      battle:{ every:2600, chance:.5,  full:false, vol:.085, heart:1200 },
+      camp:  { every:1500, chance:.8,  full:true,  vol:.105, heart:0    }
     }[mood];
     this._timers.push(setInterval(()=>{
-      if(this.muted || document.hidden) return;
+      if(!this.musicOn || document.hidden) return;
       if(Math.random() < cfg.chance){
         const notes = cfg.full ? this.SCALE : this.SCALE.slice(0, 5);
         const f = notes[ri(0, notes.length-1)];
@@ -121,14 +141,14 @@ const AudioSys = {
       }
     }, cfg.every));
     if(cfg.heart) this._timers.push(setInterval(()=>{
-      if(this.muted || document.hidden) return;
-      this.tone({f:55, f2:38, type:'sine', t:.22, v:.3, dest:this.music});
-      this.tone({f:55, f2:38, type:'sine', t:.18, v:.2, when:.16, dest:this.music});
+      if(!this.musicOn || document.hidden) return;
+      this.tone({f:55, f2:38, type:'sine', t:.22, v:.34, dest:this.music});
+      this.tone({f:55, f2:38, type:'sine', t:.18, v:.24, when:.16, dest:this.music});
     }, cfg.heart));
   },
 
   _droneBase(f){
-    [[f, 'sine', .055], [f*1.5, 'triangle', .03], [f*2.02, 'sine', .018]].forEach(([fr, tp, vv])=>{
+    [[f, 'sine', .07], [f*1.5, 'triangle', .04], [f*2.02, 'sine', .024]].forEach(([fr, tp, vv])=>{
       const o = this.ctx.createOscillator(), g = this.ctx.createGain();
       const fl = this.ctx.createBiquadFilter(); fl.type='lowpass'; fl.frequency.value = 340;
       o.type = tp; o.frequency.value = fr; o.detune.value = rand(-6, 6);
