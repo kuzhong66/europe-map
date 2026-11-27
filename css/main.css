@@ -204,3 +204,50 @@ button{font-family:var(--serif);color:inherit;background:none;border:none;cursor
 /* ============ 粒子开关 & 滚动条 ============ */
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-thumb{background:var(--line2);border-radius:3px}
+/* ============ v1.2 事件 / 对话 ============ */
+.ev-wrap{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2vh;padding:3vh 5vw;animation:scrIn .5s cubic-bezier(.2,.9,.3,1)}
+.ev-scene{width:min(52vw,320px);border:1px solid var(--line2);border-radius:6px;padding:2vh 2vw;background:rgba(20,14,9,.5)}
+.ev-scene .scene{width:100%;height:auto;display:block}
+.ev-box{width:min(88vw,640px);background:var(--panel);border:1px solid var(--line2);border-top:2px solid var(--ember);border-radius:6px;padding:2.2vh 2.6vh;min-height:32vh;display:flex;flex-direction:column}
+.ev-name{font-size:clamp(15px,2.4vh,19px);font-weight:900;letter-spacing:.4em;color:var(--ember2);margin-bottom:1.2vh;padding-bottom:1vh;border-bottom:1px solid var(--line)}
+.ev-text{flex:1;font-size:clamp(13px,2.1vh,16px);line-height:1.95;color:var(--bone);letter-spacing:.05em;min-height:9vh}
+.ev-text .cur{display:inline-block;width:.55em;height:1.05em;margin-left:.15em;background:var(--ember);vertical-align:-.15em;animation:curBlink .8s steps(1) infinite}
+@keyframes curBlink{50%{opacity:0}}
+.ev-opts{display:flex;flex-direction:column;gap:1.2vh;margin-top:1.6vh}
+.ev-opt{padding:1.2vh 2vh;text-align:left;font-size:clamp(12px,2vh,15px);letter-spacing:.15em;color:var(--bone);border:1px solid var(--line2);border-radius:4px;background:rgba(30,21,13,.5);transition:.2s;animation:cardPop .4s backwards}
+.ev-opt:hover{border-color:var(--ember);color:var(--ember2);background:rgba(46,30,16,.6)}
+.ev-opt.off{opacity:.35}
+.ev-hint{text-align:right;font-size:clamp(10px,1.6vh,12px);color:var(--faint);letter-spacing:.3em;margin-top:1vh;opacity:0;transition:.3s}
+.ev-hint.show{opacity:1;animation:hintBreath 1.6s ease-in-out infinite}
+@keyframes hintBreath{50%{opacity:.4}}
+.ev-done{align-self:center;margin-top:1.4vh}
+/* ===== 事件界面适配：整体塞进屏幕，选项永远可点 ===== */
+.ev-wrap{height:100%;display:flex;flex-direction:column;justify-content:center;gap:10px;padding:12px}
+.ev-scene{flex:0 1 auto;min-height:0}
+.ev-scene svg{width:auto;max-width:60%;height:auto;max-height:24vh;margin:0 auto;display:block}
+.ev-box{flex:0 0 auto;max-height:62vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.ev-opts{flex:0 0 auto}
+
+
+/* ============ v1.2 设置面板 ============ */
+.set-box{min-width:min(82vw,430px)}
+.set-row{display:flex;align-items:center;gap:1.6vh;margin:1.6vh 0}
+.set-row>span{width:6ch;letter-spacing:.2em;color:var(--dim);font-size:clamp(12px,1.9vh,15px)}
+.tgl{width:5.4ch;padding:.5vh 0;text-align:center;border:1px solid var(--line2);border-radius:3px;color:var(--faint);font-size:clamp(11px,1.8vh,14px);letter-spacing:.1em;transition:.2s}
+.tgl.on{color:var(--ember2);border-color:var(--emberD);text-shadow:0 0 8px rgba(255,122,47,.4)}
+input[type=range]{flex:1;-webkit-appearance:none;appearance:none;height:3px;background:var(--line2);border-radius:2px;outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:clamp(16px,2.6vh,22px);height:clamp(16px,2.6vh,22px);border-radius:50%;background:var(--ember2);box-shadow:0 0 10px rgba(255,122,47,.6);cursor:pointer}
+input[type=range]::-moz-range-thumb{width:clamp(16px,2.6vh,22px);height:clamp(16px,2.6vh,22px);border:none;border-radius:50%;background:var(--ember2);box-shadow:0 0 10px rgba(255,122,47,.6);cursor:pointer}
+.set-note{font-size:clamp(10px,1.6vh,13px);color:var(--faint);margin:1vh 0 2vh}
+
+/* ============ v1.2 存档馆 ============ */
+.sv-wrap{justify-content:center}
+.sv-list{display:flex;flex-direction:column;gap:1.4vh;width:min(88vw,560px)}
+.sv-slot{display:flex;align-items:center;gap:2vh;padding:1.6vh 2.2vh;border:1px solid var(--line2);border-radius:6px;background:rgba(24,17,11,.6);animation:cardPop .45s backwards}
+.sv-slot.blank{opacity:.55}
+.sv-tag{font-weight:700;font-size:clamp(12px,1.9vh,15px);letter-spacing:.2em;color:var(--ember2);width:9ch;flex:none}
+.sv-info{flex:1;text-align:left;font-size:clamp(11px,1.8vh,14px);color:var(--bone);line-height:1.7}
+.sv-info span{color:var(--faint);font-size:clamp(10px,1.6vh,12px)}
+.sv-empty{color:var(--faint)}
+.sv-btns{display:flex;gap:1vh;flex:none}
+.hidden{display:none!important}
