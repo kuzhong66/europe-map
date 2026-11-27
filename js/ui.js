@@ -128,8 +128,10 @@ const UI = {
   },
   show(id){
     $$('.screen').forEach(s => s.classList.toggle('active', s.id === id));
-    const INTENS = { 'screen-loading':2, 'screen-menu':1.5, 'screen-map':1, 'screen-battle':.55,
-                     'screen-reward':.8, 'screen-camp':.95, 'screen-select':.8, 'screen-over':1.9 };
+const INTENS = { 'screen-loading':2, 'screen-menu':1.5, 'screen-map':1, 'screen-battle':.55,
+                     'screen-reward':.8, 'screen-camp':.95, 'screen-select':.8, 'screen-over':1.9,
+                     'screen-event':.9, 'screen-saves':.7 };
+
     FX.setIntensity(INTENS[id] || 1);
     this.lastScreen = id;
     if(typeof AudioSys!=='undefined') AudioSys.setMood(id);
