@@ -52,8 +52,6 @@ const Game = {
     $('#btnCont').addEventListener('pointerdown', ()=>{ S('click'); SaveSys.load('auto') });
     $('#btnSaves').addEventListener('pointerdown', ()=>{ S('click'); SavesUI.open(false) });
     $('#btnSetting').addEventListener('pointerdown', ()=> Settings.open());
-    $('#btnCodex').addEventListener('pointerdown', ()=> UI.toast('卷轴仍在书写 —— v1.3 开启'));
-
     // 地图
     $('#mapBook').addEventListener('pointerdown', ()=> this.state && Screens.vault('牌 组', this.state.deck));
     $('#mapSave').addEventListener('pointerdown', ()=> this.state && SavesUI.open(true));
